@@ -1,6 +1,6 @@
 {
   "name": "luigi-core-private",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "private": true,
   "description": "luigi-core development version, only the public folder is being published to npm as a package",
   "devDependencies": {
@@ -45,8 +45,9 @@
     "terser": "^4.4.0",
     "url-loader": "^1.0.1",
     "webpack": "^4.40.2",
+    "webpack-cli": "^3.3.9",
     "webpack-bundle-analyzer": "^3.6.0",
-    "webpack-cli": "^3.3.9"
+    "serialize-javascript": ">=2.1.1"
   },
   "scripts": {
     "bundle": "npm run bundle-evergreen && npm run bundle-ie11",
@@ -79,7 +80,7 @@
     },
     {
       "path": "./public/luigi-ie11.css",
-      "maxSize": "500 kB",
+      "maxSize": "550 kB",
       "compression": "none"
     }
   ],
@@ -129,7 +130,7 @@
     "url": "ssh://github.com/SAP/luigi.git"
   },
   "dependencies": {
-    "npm": "^6.13.1",
+    "npm": ">=6.13.4",
     "test": "^0.6.0",
     "diff": ">=3.5.0"
   }
