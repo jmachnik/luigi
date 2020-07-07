@@ -1,6 +1,9 @@
 // Helper methods for 'navigation.js' file. They don't require any method from 'navigation.js` but are required by them.
 import { LuigiAuth, LuigiConfig } from '../../core-api';
 import { AuthHelpers } from './';
+import { Navigation } from '../../navigation/services/navigation';
+import { Routing } from '../../services/routing';
+import { NodeDataManagementStorage } from '../../services/node-data-management';
 
 class NavigationHelpersClass {
   constructor() {
@@ -12,6 +15,11 @@ class NavigationHelpersClass {
   getProductSwitcherConfig() {
     const userConfig = LuigiConfig.getConfigValue('navigation.productSwitcher');
     return Object.assign({ icon: 'grid', label: 'My Products' }, userConfig);
+  }
+
+  getProductSwitcherColumnsNumber() {
+    const productSwitcherConfig = this.getProductSwitcherConfig();
+    return productSwitcherConfig.columns === 3 ? 3 : 4;
   }
 
   prepareForTests(...parts) {
@@ -144,7 +152,7 @@ class NavigationHelpersClass {
   }
 
   async generateTopNavNodes(pathData) {
-    const rawChildren = pathData[0].children;
+    const rawChildren = await Navigation.getFilteredChildren(pathData[0]);
     let selectedNode = null;
     let visibleNodeCount = 0;
     let cats = {};
@@ -253,6 +261,18 @@ class NavigationHelpersClass {
 
   isOpenUIiconName(string) {
     return /^[a-z0-9\-]+$/i.test(string);
+  }
+
+  handleUnresponsiveClient(node) {
+    if (node.errorFn) {
+      node.errorFn();
+    } else {
+      console.warn(
+        'Something went wrong with a client! You will be redirected to another page.'
+      );
+      const path = node.redirectPath || '/';
+      Routing.navigateTo(path);
+    }
   }
 }
 

@@ -5,7 +5,8 @@
     <meta charset="utf-8">
     <meta name="description" content="">
     <title>Table</title>
-    <link href="/vendor/fiori-fundamentals/dist/fiori-fundamentals.min.css" rel="stylesheet">
+    <link href="/vendor/fundamental-styles/dist/fundamental-styles.css" rel="stylesheet">
+	<link href="../../styles/styles.css" rel="stylesheet">
 	<script src="/vendor/luigi-client/luigi-client.js"></script>
 </head>
 <body>
@@ -25,34 +26,34 @@
 
 	<div class="fd-page__content">
     <section class="fd-section">
-        <div class="fd-panel">
-            <div class="fd-panel__header">
-                <h3 class="fd-panel__title">
+        <div class="fd-layout-panel">
+            <div class="fd-layout-panel__header">
+                <h3 class="fd-layout-panel__title">
                     Items
                 </h3>
             </div>
             
-            <div class="fd-panel__body fd-panel__body--bleed">
+            <div class="fd-layout-panel__body fd-layout-panel__body--bleed">
                 <table class="fd-table">
-                    <thead>
-                        <tr id="headerRow">
-                            <th>Column Header</th>
-                            <th>Column Header</th>
-                            <th>Column Header</th>
-                            <th>Column Header</th>
+                    <thead class="fd-table__header">
+                        <tr class="fd-table__row" id="headerRow">
+                            <th class="fd-table__cell">Column Header</th>
+                            <th class="fd-table__cell">Column Header</th>
+                            <th class="fd-table__cell">Column Header</th>
+                            <th class="fd-table__cell">Column Header</th>
                         </tr>
                     </thead>
                     <tbody id="table">
-                        <tr>
-                            <td>user.name@email.com</td>
-                            <td>First Name</td>
-                            <td>Last Name</td>
-                            <td>01/26/17</td>
+                        <tr class="fd-table__row">
+                            <td class="fd-table__cell">user.name@email.com</td>
+                            <td class="fd-table__cell">First Name</td>
+                            <td class="fd-table__cell">Last Name</td>
+                            <td class="fd-table__cell">01/26/17</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            <div class="fd-panel__footer">
+            <div class="fd-layout-panel__footer">
             </div>
         </div>
     </section>

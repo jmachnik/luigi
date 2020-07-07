@@ -3,7 +3,8 @@
 import {
   GenericHelpers,
   IframeHelpers,
-  RoutingHelpers
+  RoutingHelpers,
+  NavigationHelpers
 } from '../utilities/helpers';
 import { LuigiConfig, LuigiI18N } from '../core-api';
 
@@ -54,15 +55,6 @@ class IframeClass {
       isolateView ||
       (isolateAllViews && !(isolateView === false) && !isSameViewGroup)
     );
-  }
-
-  removeIframe(iframe, node) {
-    const children = Array.from(node.children);
-    children.forEach(child => {
-      if (child === iframe) {
-        node.removeChild(child);
-      }
-    });
   }
 
   getPreservedViewsInDom(iframes) {
@@ -147,6 +139,64 @@ class IframeClass {
     return newActiveIframe;
   }
 
+  setOkResponseHandler(config, component, node) {
+    /**
+     * check if luigi responded
+     * if not, callback again to replace the iframe
+     */
+    this.timeoutHandle = setTimeout(() => {
+      if (config.navigateOk) {
+        config.navigateOk = undefined;
+      } else {
+        IframeHelpers.removeIframe(config.iframe, node);
+        config.iframe = undefined;
+        config.isFallbackFrame = true;
+        console.info(
+          'navigate: luigi-client did not respond, using fallback by replacing iframe'
+        );
+        this.navigateIframe(config, component, node);
+      }
+    }, this.iframeNavFallbackTimeout);
+  }
+
+  checkIframe(errorHandlerNode, componentNode, viewUrlPath, config, node) {
+    this.timeoutHandle = setTimeout(() => {
+      if (componentNode.get().showLoadingIndicator) {
+        if (errorHandlerNode.viewUrl) {
+          viewUrlPath = errorHandlerNode.viewUrl;
+          componentNode.set({ viewUrl: viewUrlPath });
+          this.iframeNavFallbackTimeout = 0;
+          this.setOkResponseHandler(config, componentNode, node);
+        } else {
+          NavigationHelpers.handleUnresponsiveClient(errorHandlerNode);
+        }
+      }
+    }, errorHandlerNode.timeout);
+  }
+
+  /**
+   * Checks if Client has set the initOk if the clientVersion is younger than 1.2.2
+   * or if it failed to receive the initial get-context request.
+   * @since: 1.2.2
+   */
+  initHandshakeFailed(config) {
+    if (!(config && config.iframe && config.iframe.luigi)) {
+      return true;
+    }
+    const clientVersion = config.iframe.luigi.clientVersion;
+    if (config.iframe.luigi.initOk === undefined) {
+      // initial get-context request was not received
+      return true;
+    } else if (
+      // valid minimum handshake version: 1.2.2
+      !clientVersion ||
+      GenericHelpers.semverCompare('1.1.1', clientVersion) !== -1
+    ) {
+      return false;
+    }
+    return !config.iframe.luigi.initOk;
+  }
+
   navigateIframe(config, component, node) {
     clearTimeout(this.timeoutHandle);
     const componentData = component.get();
@@ -226,7 +276,11 @@ class IframeClass {
       config.iframe = activeIframe;
     }
 
-    if (!config.iframe) {
+    // if iframe does not exist, or handshake was interrupted, create a new one
+    if (!config.iframe || this.initHandshakeFailed(config)) {
+      if (config.iframe) {
+        node.removeChild(config.iframe);
+      }
       // preserveView, hide other frames, else remove
       if (pvSituation) {
         this.notifyInactiveIframes();
@@ -265,6 +319,20 @@ class IframeClass {
             IframeHelpers.sendMessageToIframe(config.iframe, message);
           });
         }
+        // In case something goes wrong with client and showLoadingIndicator is still active
+        const pageErrorHandler = componentData.currentNode.pageErrorHandler;
+
+        if (pageErrorHandler) {
+          this.checkIframe(pageErrorHandler, component, viewUrl, config, node);
+        } else if (config.defaultPageErrorHandler) {
+          this.checkIframe(
+            config.defaultPageErrorHandler,
+            component,
+            viewUrl,
+            config,
+            node
+          );
+        }
       }
     } else {
       component.set({ showLoadingIndicator: false });
@@ -285,25 +353,19 @@ class IframeClass {
         pathParams: JSON.stringify(Object.assign({}, componentData.pathParams)),
         internal: JSON.stringify(component.prepareInternalData(config))
       };
-      IframeHelpers.sendMessageToIframe(config.iframe, message);
+
+      const withSync = componentData.isNavigationSyncEnabled;
+      if (withSync) {
+        // default, send navigation event to client
+        IframeHelpers.sendMessageToIframe(config.iframe, message);
+        this.setOkResponseHandler(config, component, node);
+      } else {
+        // `withoutSync()` used. client navigation was skipped, reset after one-time use.
+        component.set({ isNavigationSyncEnabled: true });
+      }
+
       // clear goBackContext and reset navigateBack after sending it to the client
       component.set({ goBackContext: undefined, isNavigateBack: false });
-
-      /**
-       * check if luigi responded
-       * if not, callback again to replace the iframe
-       */
-      this.timeoutHandle = setTimeout(() => {
-        if (config.navigateOk) {
-          config.navigateOk = undefined;
-        } else {
-          config.iframe = undefined;
-          console.info(
-            'navigate: luigi-client did not respond, using fallback by replacing iframe'
-          );
-          this.navigateIframe(config, component, node);
-        }
-      }, this.iframeNavFallbackTimeout);
     }
   }
 }

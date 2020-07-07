@@ -43,8 +43,15 @@
     aria-hidden="false"
     aria-label="Loading"
   >
-    <div class="fd-spinner">
-      <div></div>
+    <div
+      class="fd-busy-indicator--m"
+      aria-hidden="false"
+      aria-label="Loading"
+      data-testid="luigi-loading-spinner"
+    >
+      <div class="fd-busy-indicator--circle-0"></div>
+      <div class="fd-busy-indicator--circle-1"></div>
+      <div class="fd-busy-indicator--circle-2"></div>
     </div>
   </div>
   {/if}
@@ -57,6 +64,7 @@
   {#if !(hideNav||hideSideNav)}
   <LeftNav
     pathData="{navigationPath}"
+    pathParams="{pathParams}"
     on:handleClick="{handleNavClick}"
     on:resizeTabNav="{onResizeTabNav}"
   />
@@ -64,6 +72,7 @@
   {#if (tabNav && !hideNav)}
   <TabNav
     pathData="{navigationPath}"
+    pathParams="{pathParams}"
     on:handleClick="{handleNavClick}"
     resizeTabNavToggle="{resizeTabNavToggle}"
   />
@@ -88,6 +97,7 @@
   import { fade } from 'svelte/transition';
   import { CSS_BREAKPOINTS } from './utilities/constants';
   import {
+    EventListenerHelpers,
     GenericHelpers,
     StateHelpers,
     RoutingHelpers,
@@ -102,6 +112,7 @@
   import { ViewGroupPreloading } from './services/preloading';
   import { MessagesListeners } from './services/messages-listeners';
   import { thirdPartyCookiesStatus } from './utilities/third-party-cookies-check.js';
+  import { NodeDataManagementStorage } from './services/node-data-management.js';
 
   const dispatch = createEventDispatcher();
 
@@ -130,7 +141,9 @@
   let viewUrl;
   let viewGroup;
   let isolateView;
+  let pageErrorHandler;
   let previousNodeValues;
+  let isNavigationSyncEnabled = true;
   let isNavigateBack = false;
   let goBackContext;
   let navigationPath;
@@ -147,19 +160,22 @@
   let thirdPartyCookiesCheck;
 
   const prepareInternalData = config => {
+    const iframeConf = config.iframe.luigi;
     const internalData = {
-      isNavigateBack: isNavigateBack,
+      isNavigateBack,
       viewStackSize: preservedViews.length,
       currentLocale: LuigiI18N.getCurrentLocale(),
-      clientPermissions: config.iframe.luigi.nextViewUrl
-        ? config.iframe.luigi.nextClientPermissions
-        : config.iframe.luigi.clientPermissions
+      clientPermissions: iframeConf.nextViewUrl
+        ? iframeConf.nextClientPermissions
+        : iframeConf.clientPermissions
     };
+
     IframeHelpers.specialIframeTypes
       .map(o => o.iframeConfigKey)
       .forEach(key => {
         internalData[key] = config[key] || false;
       });
+
     return internalData;
   };
 
@@ -168,6 +184,7 @@
       console.info('iframe does not exist, not able to send context.');
       return;
     }
+
     const message = {
       msg: 'luigi.init',
       context: JSON.stringify(
@@ -182,6 +199,7 @@
       internal: JSON.stringify(prepareInternalData(config)),
       authData: AuthHelpers.getStoredAuthData()
     };
+
     IframeHelpers.sendMessageToIframe(config.iframe, message);
   };
 
@@ -213,6 +231,7 @@
     path = GenericHelpers.addLeadingSlash(path);
 
     addPreserveView(data, config);
+
     Routing.navigateTo(path); //navigate to the raw path. Any errors/alerts are handled later
   };
 
@@ -272,6 +291,7 @@
           pathParams,
           hideSideNav,
           isolateView,
+          pageErrorHandler,
           previousNodeValues,
           mfSplitView,
           splitViewValues,
@@ -279,7 +299,8 @@
           showLoadingIndicator,
           tabNav,
           isNavigateBack,
-          goBackContext
+          goBackContext,
+          isNavigationSyncEnabled
         };
       },
       set: obj => {
@@ -307,6 +328,8 @@
               hideSideNav = obj.hideSideNav;
             } else if (prop === 'isolateView') {
               isolateView = obj.isolateView;
+            } else if (prop === 'pageErrorHandler') {
+              pageErrorHandler = obj.pageErrorHandler;
             } else if (prop === 'previousNodeValues') {
               previousNodeValues = obj.previousNodeValues;
             } else if (prop === 'mfSplitView') {
@@ -323,6 +346,8 @@
               isNavigateBack = obj.isNavigateBack;
             } else if (prop === 'goBackContext') {
               goBackContext = obj.goBackContext;
+            } else if (prop === 'isNavigationSyncEnabled') {
+              isNavigationSyncEnabled = obj.isNavigationSyncEnabled;
             }
           });
         }
@@ -341,7 +366,7 @@
     StateHelpers.doOnStoreChange(
       store,
       () => {
-        LuigiConfig._configModificationTimestamp = new Date();
+        NodeDataManagementStorage.deleteCache();
         const currentPath = Routing.getCurrentPath();
         Routing.handleRouteChange(
           currentPath,
@@ -379,7 +404,23 @@
 
   const buildPath = params => {
     let path = params.link;
-    if (params.fromClosestContext) {
+    if (params.fromVirtualTreeRoot) {
+      // from a parent node specified with virtualTree: true
+      const node = [...navigationPath].reverse().find(n => n.virtualTree);
+      if (!node) {
+        console.error(
+          'LuigiClient Error: fromVirtualTreeRoot() is not possible, not inside a virtualTree navigation. Docs: https://docs.luigi-project.io/docs/navigation-parameters-reference/?section=virtualtree'
+        );
+        return;
+      }
+      path = Routing.concatenatePath(getSubPath(node), params.link);
+    } else if (params.fromParent) {
+      // from direct parent
+      path = Routing.concatenatePath(
+        getSubPath(currentNode.parent),
+        params.link
+      );
+    } else if (params.fromClosestContext) {
       // from the closest navigation context
       const node = [...navigationPath]
         .reverse()
@@ -423,6 +464,7 @@
           node.openNodeInModal === true ? {} : node.openNodeInModal
         );
       } else {
+        getComponentWrapper().set({ isNavigationSyncEnabled: true });
         Routing.handleRouteClick(node, getComponentWrapper());
       }
     });
@@ -435,13 +477,44 @@
   setContext('handleNavigation', handleNavigation);
 
   //// SPLIT VIEW
-
-  const openSplitView = (nodepath, settings) => {
+  export const openSplitView = (nodepath, settings) => {
+    if (mfSplitView.displayed) {
+      console.warn('Only one splitview can be oppened at a time');
+      return;
+    }
     SplitViewSvc.open(getComponentWrapper(), nodepath, settings);
   };
 
-  const closeSplitView = () => {
+  export const closeSplitView = () => {
     SplitViewSvc.close(getComponentWrapper());
+  };
+
+  export const collapseSplitView = () => {
+    SplitViewSvc.collapse(getComponentWrapper());
+    mfSplitView.collapsed = true;
+  };
+
+  export const expandSplitView = () => {
+    SplitViewSvc.expand(getComponentWrapper());
+    mfSplitView.collapsed = false;
+  };
+
+  export const isSplitViewCollapsed = () => {
+    if (mfSplitView.displayed) {
+      return mfSplitView.collapsed;
+    }
+    return false;
+  };
+
+  export const isSplitViewExpanded = () => {
+    if (mfSplitView.displayed) {
+      return !mfSplitView.collapsed;
+    }
+    return false;
+  };
+
+  export const existsSplitView = () => {
+    return mfSplitView.displayed;
   };
 
   const splitViewIframeCreated = event => {
@@ -634,13 +707,12 @@
 
   //// MICRO-FRONTEND MODAL
 
-  let mfModal;
+  let mfModal = {};
 
   const resetMicrofrontendModalData = () => {
-    mfModal = {
-      displayed: false,
-      settings: {}
-    };
+    mfModal.displayed = false;
+    mfModal.nodepath = undefined;
+    mfModal.modalSettings = {};
   };
 
   resetMicrofrontendModalData();
@@ -650,11 +722,9 @@
     if (await Navigation.shouldPreventNavigation(nodeObject)) {
       return;
     }
-    mfModal = {
-      displayed: true,
-      nodepath,
-      modalSettings
-    };
+    mfModal.displayed = true;
+    mfModal.nodepath = nodepath;
+    mfModal.modalSettings = modalSettings;
   };
 
   const modalIframeCreated = event => {
@@ -665,9 +735,7 @@
   const closeModal = () => {
     if (modalIframe) {
       getUnsavedChangesModalPromise(modalIframe.contentWindow).then(() => {
-        mfModal = {
-          displayed: false
-        };
+        resetMicrofrontendModalData();
       });
     }
   };
@@ -678,11 +746,15 @@
     const isolateAllViews = LuigiConfig.getConfigValue(
       'navigation.defaults.isolateView'
     );
+    const defaultPageErrorHandler = LuigiConfig.getConfigValue(
+      'navigation.defaults.pageErrorHandler'
+    );
     const config = {
       iframe: null,
       navigateOk: null,
       builderCompatibilityMode: Boolean(window.builderCompatibilityMode),
-      isolateAllViews
+      isolateAllViews,
+      defaultPageErrorHandler
     };
     LuigiI18N.addCurrentLocaleChangeListener(locale => {
       const message = {
@@ -692,7 +764,7 @@
       IframeHelpers.broadcastMessageToAllIframes(message);
     });
 
-    window.addEventListener('popstate', async e => {
+    EventListenerHelpers.addEventListener('popstate', async e => {
       const alertQueue = alerts;
       if (!alertQueue || !alertQueue.length) return;
 
@@ -716,7 +788,7 @@
       alerts = updatedAlerts;
     });
 
-    window.addEventListener('message', async e => {
+    EventListenerHelpers.addEventListener('message', async e => {
       const iframe = IframeHelpers.getValidMessageSource(e);
       if (!iframe) return;
 
@@ -729,8 +801,8 @@
         );
         const customMessageListener = customMessagesListeners[message.id];
         if (typeof customMessageListener === 'function') {
-          const microfrontend = LuigiElements.getMicrofrontends().find(
-            mf => mf.id === e.source.frameElement.luigi.id
+          const microfrontend = LuigiElements.getMicrofrontends().find(mf =>
+            IframeHelpers.isMessageSource(e, mf.container)
           );
 
           customMessageListener(
@@ -738,7 +810,19 @@
             microfrontend,
             GenericHelpers.removeInternalProperties(iframe.luigi.currentNode)
           );
+        } else {
+          console.warn(
+            `Warning: Custom message with id: '${message.id}' does not exist. Make sure you provided the same id as in the config file. Documentation: https://docs.luigi-project.io/docs/communication?section=custom-messages`
+          );
         }
+      }
+
+      /**
+       * Persist the answer of the init handshake
+       * to prevent half-initialized clients
+       */
+      if ('luigi.init.ok' === e.data.msg) {
+        config.iframe.luigi.initOk = true;
       }
 
       if ('luigi.navigate.ok' === e.data.msg) {
@@ -752,6 +836,9 @@
       }
 
       if ('luigi.get-context' === e.data.msg) {
+        config.iframe.luigi.clientVersion = e.data.clientVersion; // undefined for v0.x clients
+        config.iframe.luigi.initOk = false; // get-context indication. used for handshake verification
+
         const specialIframeProps = {
           modalIframe,
           modalIframeData,
@@ -833,6 +920,7 @@
           openSplitView(path, e.data.params.splitView);
         } else {
           getUnsavedChangesModalPromise().then(() => {
+            isNavigationSyncEnabled = !e.data.params.withoutSync;
             handleNavigation(e.data, config);
             closeModal();
             closeSplitView();
@@ -1020,7 +1108,7 @@
     } else if (responsiveNavSetting === 'simpleMobileOnly') {
       document.body.classList.add('lui-simpleSlideInNav', 'lui-mobileOnly');
       simpleSlideInNav = true;
-    } else if (responsiveNavSetting === 'semiCollapsible') {
+    } else if (responsiveNavSetting === 'semiCollapsible' || 'Fiori3') {
       document.body.classList.add('lui-semiCollapsible');
     }
     thirdPartyCookiesCheck = LuigiConfig.getConfigValue(
@@ -1053,25 +1141,22 @@
 </script>
 
 <style type="text/scss">
-  /*Mixins*/
+  @import 'styles/fonts';
   @import 'styles/mixins';
-
-  $topNavHeight: 48px;
-  $topNavHeightTab: 51px;
-  $leftNavWidth: 320px;
-  $leftNavWidthCollapsed: 40px;
-  $desktopMinWidth: 600px;
+  @import 'styles/variables';
 
   :global(html) {
     box-sizing: border-box;
-    font-size: 14px;
+    font-size: 16px;
     position: fixed;
     width: 100%;
+    min-height: 100%;
   }
   :global(body) {
     -webkit-font-smoothing: antialiased;
     margin: 0;
     line-height: 1.42857;
+    overflow: hidden;
   }
   :global(*) {
     box-sizing: inherit;
@@ -1090,12 +1175,14 @@
   :global([luigi-app-loading-indicator]) {
     z-index: 10;
     background-color: var(--fd-background-color);
-    padding-top: 30vh;
     position: absolute;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   :global([luigi-app-loading-indicator].hidden) {
     visibility: hidden;
@@ -1229,9 +1316,6 @@
       display: inline;
     }
 
-    :global(.fd-app__sidebar) {
-      width: $leftNavWidth;
-    }
     :global(body.lui-simpleSlideInNav.lui-leftNavToggle) {
       .iframeContainer,
       .spinnerContainer {
@@ -1288,6 +1372,15 @@
         left: $leftNavWidthCollapsed;
       }
     }
+
+    :global(.fd-dialog) {
+      &__content {
+        &:not(.fd-dialog__content--mobile) {
+          max-width: 90%;
+          min-width: 90%;
+        }
+      }
+    }
   }
 
   :global(html.luigi-app-in-custom-container) {
@@ -1311,5 +1404,102 @@
         position: absolute;
       }
     }
+  }
+
+  //IE11 fixes
+  :global(.fd-nested-list__content),
+  :global(.fd-nested-list__link) {
+    &.has-child:after {
+      height: 100%;
+    }
+  }
+
+  :global(.fd-side-nav--condensed) {
+    :global(.fd-nested-list__link) {
+      font-size: 10px;
+      &.has-child:after {
+        height: 0;
+      }
+    }
+  }
+
+  //Fixing issues for fundamental styles
+
+  //Add padding for shellbar buttons
+  :global(.fd-shellbar__button) {
+    padding-left: 0.5625rem !important;
+    padding-right: 0.5625rem !important;
+  }
+
+  :global(.fd-menu__link) {
+    text-decoration: none; //Remove underline from links in fd-menu
+    border-radius: 0; //Remove border radius from links inside fd-menu
+  }
+
+  //Make border radius for links inside fd-menu only for the first and last elements
+  @mixin luigi-menu__link--border($position) {
+    :global(.fd-menu__link) {
+      border-#{$position}-left-radius: 0.25rem;
+      border-#{$position}-left-radius: var(
+        --sapElement_BorderCornerRadius,
+        0.25rem
+      );
+      border-#{$position}-right-radius: 0.25rem;
+      border-#{$position}-right-radius: var(
+        --sapElement_BorderCornerRadius,
+        0.25rem
+      );
+    }
+  }
+  :global(.fd-menu) {
+    :global(.fd-menu__list) {
+      &:first-child {
+        :global(.fd-menu__item) {
+          &:first-child {
+            @include luigi-menu__link--border('top');
+          }
+        }
+      }
+
+      &:last-child {
+        :global(.fd-menu__item) {
+          &:last-child {
+            @include luigi-menu__link--border('bottom');
+          }
+        }
+      }
+    }
+  }
+
+  //Add z-index for dialogs
+  :global(.fd-dialog) {
+    z-index: 1000;
+  }
+
+  :global(.fd-dialog__content--mobile) {
+    //Remove border-radius from mobile fullscreen dialog
+    border-radius: 0;
+
+    :global(.fd-dialog__header.fd-bar),
+    :global(.fd-dialog__footer.fd-bar) {
+      border-radius: 0;
+    }
+
+    //Recalculate height for mobile devices
+    height: calc(var(--vh, 1vh) * 100});
+    max-height: calc(var(--vh, 1vh) * 100});
+    -webkit-overflow-scrolling: touch;
+  }
+
+  //Recalculate height for mobile devices
+  :global(.fd-product-switch__body) {
+    max-height: calc(var(--vh, 1vh) * 100 - 76px);
+  }
+
+  //Overwrites with SAP variables
+
+  :global(.fd-shellbar) {
+    border-bottom: #354a5f;
+    border-bottom: 1px solid var(--sapShell_BorderColor, #354a5f);
   }
 </style>

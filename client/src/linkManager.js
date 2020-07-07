@@ -14,7 +14,6 @@ export class linkManager extends LuigiClientBase {
    * @private
    */
   constructor(values) {
-    // @param {object} values TODO: is it necessary at all, where is it used?
     super();
     Object.assign(this, values);
 
@@ -24,6 +23,8 @@ export class linkManager extends LuigiClientBase {
       errorSkipNavigation: false,
       fromContext: null,
       fromClosestContext: false,
+      fromVirtualTreeRoot: false,
+      fromParent: false,
       relative: false,
       link: ''
     };
@@ -70,7 +71,6 @@ export class linkManager extends LuigiClientBase {
         splitView: splitViewSettings
       })
     };
-
     helpers.sendPostMessageToLuigiCore(navigationOpenMsg);
   }
 
@@ -117,6 +117,7 @@ export class linkManager extends LuigiClientBase {
    */
   fromContext(navigationContext) {
     const navigationContextInParent =
+      this.currentContext.context.parentNavigationContexts &&
       this.currentContext.context.parentNavigationContexts.indexOf(
         navigationContext
       ) !== -1;
@@ -142,6 +143,7 @@ export class linkManager extends LuigiClientBase {
    */
   fromClosestContext() {
     const hasParentNavigationContext =
+      this.currentContext &&
       this.currentContext.context.parentNavigationContexts.length > 0;
     if (hasParentNavigationContext) {
       this.options.fromContext = null;
@@ -151,6 +153,33 @@ export class linkManager extends LuigiClientBase {
         'Navigation not possible, no parent navigationContext found.'
       );
     }
+    return this;
+  }
+  /**
+   * Sets the current navigation base to the parent node that is defined as virtualTree. This method works only when the currently active micro frontend is inside a virtualTree.
+   * @memberof linkManager
+   * @returns {linkManager} link manager instance
+   * @since 1.0.1
+   * @example
+   * LuigiClient.linkManager().fromVirtualTreeRoot().navigate('/users/groups/stakeholders')
+   */
+  fromVirtualTreeRoot() {
+    this.options.fromContext = null;
+    this.options.fromClosestContext = false;
+    this.options.fromVirtualTreeRoot = true;
+    return this;
+  }
+
+  /**
+   * Enables navigating to sibling nodes without knowing the absolute path.
+   * @memberof linkManager
+   * @returns {linkManager} link manager instance
+   * @since 1.0.1
+   * @example
+   * LuigiClient.linkManager().fromParent().navigate('/sibling')
+   */
+  fromParent() {
+    this.options.fromParent = true;
     return this;
   }
 
@@ -240,7 +269,7 @@ export class linkManager extends LuigiClientBase {
   /**
    * Discards the active view and navigates back to the last visited view. Works with preserved views, and also acts as the substitute of the browser **back** button. **goBackContext** is only available when using preserved views.
    * @memberof linkManager
-   * @param {any} goBackValue data that is passed in the **goBackContext** field to the last visited view when using preserved views.
+   * @param {any} goBackValue data that is passed in the **goBackContext** field to the last visited view when using preserved views
    * @example
    * LuigiClient.linkManager().goBack({ foo: 'bar' });
    * LuigiClient.linkManager().goBack(true);
@@ -250,5 +279,19 @@ export class linkManager extends LuigiClientBase {
       msg: 'luigi.navigation.back',
       goBackContext: goBackValue && JSON.stringify(goBackValue)
     });
+  }
+
+  /**
+   * Disables the navigation handling for a single navigation request
+   * It prevents Luigi Core from handling url change after `navigate()`.
+   * Used for auto-navigation
+   * @since 0.7.7
+   * @example
+   * LuigiClient.linkManager().withoutSync().navigate('/projects/xy/foobar');
+   * LuigiClient.linkManager().withoutSync().fromClosestContext().navigate('settings');
+   */
+  withoutSync() {
+    this.options.withoutSync = true;
+    return this;
   }
 }

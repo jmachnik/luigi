@@ -13,6 +13,18 @@ module.exports = {
   runtimeCompiler: true,
   outputDir: 'dist',
   configureWebpack: {
+    module: {
+      rules: [
+        {
+          test: /\.css$/,
+          use: ['css-loader']
+        },
+        {
+          test: /\.scss$/,
+          use: ['sass-loader']
+        }
+      ]
+    },
     plugins: [
       new CopyWebpackPlugin(
         [
@@ -22,7 +34,7 @@ module.exports = {
             from: 'index.html'
           },
           {
-            context: 'node_modules/@kyma-project/luigi-core',
+            context: 'node_modules/@luigi-project/core',
             to: './luigi-core',
             from: {
               glob: '**',

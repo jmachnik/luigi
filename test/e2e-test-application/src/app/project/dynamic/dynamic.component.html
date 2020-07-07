@@ -1,0 +1,130 @@
+<section class="fd-section dynamic-component">
+  <div class="fd-section__header">
+    <h1 class="fd-section__title">{{ nodeLabel }}</h1>
+  </div>
+
+  <div class="fd-panel" *ngIf="!links">
+    <div class="fd-panel__body">
+      <p>{{ nodeLabel }} content.</p>
+      <div
+        class="clickable"
+        (click)="
+          linkManager().navigate(
+            '/projects/pr2/users/groups/avengers/settings/dyn1'
+          )
+        "
+      >
+        projects/pr2/users/groups/avengers/settings/dyn1
+      </div>
+      <br />
+      <div
+        class="clickable"
+        (click)="
+          linkManager().navigate('/projects/pr2/users/groups/avengers/settings')
+        "
+      >
+        projects/pr2/users/groups/avengers/settings
+      </div>
+      <br />
+      <div
+        class="clickable"
+        (click)="
+          linkManager().navigate(
+            '/projects/pr2/users/groups/avengers/settings/dyn2'
+          )
+        "
+      >
+        projects/pr2/users/groups/avengers/settings/dyn2
+      </div>
+      <br /><br />
+      <div
+        class="clickable"
+        (click)="
+          linkManager().navigate(
+            '/projects/pr2/users/groups/others/settings/dyn1'
+          )
+        "
+      >
+        projects/pr2/users/groups/others/settings/dyn1
+      </div>
+      <br />
+      <div
+        class="clickable"
+        (click)="
+          linkManager().navigate('/projects/pr2/users/groups/others/settings')
+        "
+      >
+        projects/pr2/users/groups/others/settings
+      </div>
+      <br />
+      <div
+        class="clickable"
+        (click)="
+          linkManager().navigate(
+            '/projects/pr2/users/groups/others/settings/dyn2'
+          )
+        "
+      >
+        projects/pr2/users/groups/others/settings/dyn2
+      </div>
+      <br />
+      <br /><br /><br />
+      <div
+        class="clickable"
+        (click)="linkManager().navigate('/projects/pr2/developers')"
+      >
+        projects/pr2/developers
+      </div>
+      <br />
+    </div>
+  </div>
+  <div class="fd-panel" *ngIf="links">
+    <div class="fd-panel__body">
+      <ul class="fd-list">
+        <li
+          class="fd-list__item clickable"
+          *ngFor="let link of links"
+          (click)="linkManager().navigate(slugify(link))"
+        >
+          <span class="sap-icon--navigation-right-arrow"></span> &nbsp;
+          {{ link }}
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="fd-section" *ngIf="nodeParams && hasBack">
+  <div class="fd-panel fd-has-margin-bottom-small">
+    <div class="fd-panel__body">
+      <div class="fd-message-strip" role="alert">
+        <div class="fd-message-strip_text">
+          Called with params:<br />
+          <pre>{{ nodeParams | json }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="fd-panel fd-has-margin-bottom-small">
+    <div class="fd-panel__header">
+      <div class="fd-panel__head">
+        <h3 class="fd-panel__title">
+          LuigiClient hasBack/GoBack
+        </h3>
+      </div>
+    </div>
+    <div class="fd-panel__body">
+      <div class="fd-form-item">
+        <label class="fd-form-label">
+          Modify goBackContext value, that you receive then via
+          LuigiClient.addContextUpdateListener():
+        </label>
+        <input type="text" class="fd-input" [(ngModel)]="callbackValue" />
+      </div>
+      <p>
+        <button class="fd-button" (click)="goBack()">Click here</button> to go
+        back to your preserved view.
+      </p>
+    </div>
+  </div>
+</section>

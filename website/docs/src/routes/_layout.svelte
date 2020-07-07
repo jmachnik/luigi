@@ -418,6 +418,23 @@
 				border: 1px solid $powder-blue;
 				position: relative;
 
+				&.active {
+					.accordion-item-content {
+						display: block;
+					}
+					.accordion-item-title {
+						background-color: $ice-blue;
+						&:after {
+							top: 16px;
+							content: '\2013';
+						}
+					}
+				}
+			}
+
+			.accordion-item-title {
+				padding: 18px 80px 18px 20px;
+				cursor: pointer;
 				&:after {
 					display: block;
 					position: absolute;
@@ -427,26 +444,6 @@
 					color: $primary-color;
 					font-size: 28px;
 				}
-
-				&.active {
-					.accordion-item-content {
-						display: block;
-					}
-
-					.accordion-item-title {
-						background-color: $ice-blue;
-					}
-
-					&:after {
-						top: 16px;
-						content: '\2013';
-					}
-				}
-			}
-
-			.accordion-item-title {
-				padding: 18px 80px 18px 20px;
-				cursor: pointer;
 
 				h3 {
 					font-size: 16px;
@@ -468,6 +465,20 @@
 					}
 				}
 			}
+		}
+		.keyword-container {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: start;
+			margin-bottom: 38px;
+		}
+		label.keyword {
+			border: 1px solid $powder-blue;
+			padding: 0 14px;
+			font-size: 14px;
+			background-color: rgba(237, 242, 247, 0.1);
+			border-radius: 6px;
+			margin-right: 10px;
 		}
 	}
 </style>

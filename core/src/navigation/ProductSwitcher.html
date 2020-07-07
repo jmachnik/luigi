@@ -3,14 +3,14 @@
 Object.keys(productSwitcherItems[0]).length }
 <!-- DESKTOP VERSION (popover): -->
 {#if !isMobile}
-<div class="fd-shellbar__action fd-shellbar__action--collapsible">
-  <div class="fd-product-switcher">
+<div class="fd-shellbar__action fd-shellbar__action--desktop">
+  <div class="fd-product-switch">
     <div class="fd-popover fd-popover--right">
       <div class="fd-popover__control" on:click|stopPropagation="{() => {}}">
         <!-- default: sap-icon--grid -->
         {#if hasOpenUIicon(config)}
         <button
-          class="fd-button--shell sap-icon--{config.icon}"
+          class="fd-button fd-button--transparent fd-product-switch__control sap-icon--{config.icon}"
           aria-expanded="{dropDownStates.productSwitcherPopover || false}"
           aria-haspopup="true"
           on:click|stopPropagation="{toggleDropdownState}"
@@ -19,7 +19,7 @@ Object.keys(productSwitcherItems[0]).length }
         ></button>
         {:else}
         <button
-          class="fd-button--shell"
+          class="fd-button fd-button--transparent fd-product-switch__control"
           aria-expanded="{dropDownStates.productSwitcherPopover || false}"
           aria-haspopup="true"
           on:click|stopPropagation="{toggleDropdownState}"
@@ -35,35 +35,39 @@ Object.keys(productSwitcherItems[0]).length }
         aria-hidden="{!(dropDownStates.productSwitcherPopover || false)}"
         id="productSwitcherPopover"
       >
-        <div class="fd-product-switcher__body">
-          <nav class="fd-menu">
-            <ul class="fd-menu__list">
-              {#each productSwitcherItems as productSwitcherItem}
-              {#if productSwitcherItem.label}
-              <li
-                on:click="{() => onActionClick(productSwitcherItem)}"
-                data-testid="{getTestId(productSwitcherItem)}"
+        <div class="{columnsClass}">
+          <ul class="fd-product-switch__list">
+            {#each productSwitcherItems as productSwitcherItem}
+            {#if productSwitcherItem.label}
+            <li
+              class="fd-product-switch__item {productSwitcherItem.selected?'selected':''}"
+              on:click="{() => onActionClick(productSwitcherItem)}"
+              data-testid="{getTestId(productSwitcherItem)}"
+            >
+              <div
+                class="fd-product-switch__icon {productSwitcherItem.icon && hasOpenUIicon(productSwitcherItem) ? 'sap-icon--' + productSwitcherItem.icon : '' }"
               >
-                <a class="fd-menu__item">
-                  <span
-                    class="fd-product-switcher__product-icon {productSwitcherItem.icon && hasOpenUIicon(productSwitcherItem) ? 'sap-icon--' + productSwitcherItem.icon + ' sap-icon--m' : '' }"
-                  >
-                    {#if !hasOpenUIicon(productSwitcherItem)}
-                    <img
-                      src="{productSwitcherItem.icon}"
-                      alt="{productSwitcherItem.altText ? productSwitcherItem.altText : ''}"
-                    >
-                    {/if}
-                  </span>
-                  <span
-                    class="fd-product-switcher__product-title"
-                  >{getNodeLabel(productSwitcherItem)}</span>
-                </a>
-              </li>
-              {/if}
-              {/each}
-            </ul>
-          </nav>
+                {#if !hasOpenUIicon(productSwitcherItem)}
+                <img
+                  src="{productSwitcherItem.icon}"
+                  alt="{productSwitcherItem.altText ? productSwitcherItem.altText : ''}"
+                >
+                {/if}
+              </div>
+              <div class="fd-product-switch__text">
+                <div
+                  class="fd-product-switch__title"
+                >{getNodeLabel(productSwitcherItem)}</div>
+                {#if getNodeSubtitle(productSwitcherItem)}
+                <div
+                  class="fd-product-switch__subtitle"
+                >{getNodeSubtitle(productSwitcherItem)}</div>
+                {/if}
+              </div>
+            </li>
+            {/if}
+            {/each}
+          </ul>
         </div>
       </div>
     </div>
@@ -79,9 +83,9 @@ Object.keys(productSwitcherItems[0]).length }
   label="{config.label}"
   {hasOpenUIicon}
   {getNodeLabel}
+  {getNodeSubtitle}
   {getTestId}
 />
-
 {/if}
 {/if}
 <script>
@@ -98,10 +102,12 @@ Object.keys(productSwitcherItems[0]).length }
   export let isMobile;
   export let config;
   export let dropDownStates;
+
   let store = getContext('store');
   let getUnsavedChangesModalPromise = getContext(
     'getUnsavedChangesModalPromise'
   );
+  let columnsClass;
 
   onMount(async () => {
     StateHelpers.doOnStoreChange(
@@ -112,6 +118,7 @@ Object.keys(productSwitcherItems[0]).length }
           productSwitcherItems = await LuigiConfig.getConfigValueAsync(
             'navigation.productSwitcher.items'
           );
+          setColumnsClass();
         }
         setViewportHeightVariable();
       },
@@ -151,6 +158,19 @@ Object.keys(productSwitcherItems[0]).length }
     return LuigiI18N.getTranslation(node.label);
   }
 
+  function getNodeSubtitle(node) {
+    return LuigiI18N.getTranslation(node.subTitle);
+  }
+
+  function setColumnsClass() {
+    const columns = NavigationHelpers.getProductSwitcherColumnsNumber();
+    if (columns === 3) {
+      columnsClass = 'fd-product-switch__body fd-product-switch__body--col-3';
+    } else {
+      columnsClass = 'fd-product-switch__body';
+    }
+  }
+
   function getTestId(node) {
     return node.testId
       ? node.testId
@@ -159,44 +179,9 @@ Object.keys(productSwitcherItems[0]).length }
 </script>
 
 <style type="text/scss">
-  .fd-product-switcher {
-    position: relative;
-    display: block;
-
-    .fd-button--shell {
-      img {
-        max-height: 100%;
-      }
-    }
-  }
-  .fd-product-switcher__product-icon > img {
-    max-height: 40px;
-  }
-
-  .fd-product-switcher__body {
-    overflow: auto;
-    max-height: calc(100vh - 50px);
-    max-height: calc(var(--vh, 1vh) * 100 - 50px);
-
-    .fd-menu__item {
-      padding: 0;
-      text-align: center;
-
-      &:hover {
-        background-color: transparent;
-      }
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .fd-product-switcher {
-      &__product-icon {
-        &.sap-icon--m {
-          &:before {
-            font-size: 38px;
-          }
-        }
-      }
+  .fd-product-switch__icon {
+    img {
+      max-height: 24px;
     }
   }
 </style>

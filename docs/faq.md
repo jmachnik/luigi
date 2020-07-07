@@ -7,7 +7,7 @@
     },
     "metaData": {
       "categoryPosition": 1,
-      "position": 3
+      "position": 2
     }
   }
 }
@@ -21,13 +21,23 @@ meta -->
 
 Luigi is a micro frontend framework that helps you build modularizable, extensible, scalable and consistent UIs and web applications (for administrators and business users).
 
+You can watch this video of a Luigi use case to understand its functions better:
+<iframe width="560" height="315" src="https://www.youtube.com/embed/fRYESd-YDhA" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 ### What are micro frontends?
 
 The term "micro frontends" extends the concepts of micro services to the frontend. It's an architectural style where big frontend monoliths are decomposed into smaller and simpler chunks to be developed, tested, deployed and maintained independently and rapidly (by many distributed teams), while still appearing to the customer as a one cohesive product.
 
+This video which explains the basics of micro frontend architecture and how it can be implemented with Luigi:
+<iframe width="560" height="315" src="https://www.youtube.com/embed/Bjp1_yvtR4Y" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 ### Does Luigi deliver micro frontends?
 
 No, Luigi itself does not deliver any micro frontends. It is a framework that helps you develop micro frontends and connect them to web applications.
+
+### Is Luigi only useful in the context of SAP or very large corporate applications?
+
+No, Luigi can be used independently of SAP for a variety of purposes. You can find one example in [this article](https://medium.com/swlh/luigi-micro-fronteds-orchestrator-8c0eca710151) which describes how to create a small hobby project using Luigi.
 
 ### Where can I download Luigi?
 
@@ -35,11 +45,18 @@ The Luigi project can be found on [GitHub](https://github.com/SAP/luigi). Depend
 
 ### The distributed development possibilities seem like a big advantage; is that just an additional benefit from using Luigi, or was that a main factor behind it?
 
-Development scalability was one of the main goals right from the beginning. There is a nice article on [martinfowler.com](https://martinfowler.com/articles/micro-frontends.html) explaining the benefits of a micro frontend architecture in general. All the disadvantages of the iframe approach mentioned in the article are solved with Luigi. 
+Development scalability was one of the main goals right from the beginning. There is a nice article on [martinfowler.com](https://martinfowler.com/articles/micro-frontends.html) explaining the benefits of a micro frontend architecture in general. All the disadvantages of the iframe approach mentioned in the article are solved with Luigi.
 
 ### One of the potential issues with a micro frontend architecture is styling. You suggest to use the CSS elements of Fundamentals to solve that issue. Is that correct?
 
 It is crucial that all micro frontends in a solution follow the same design guidelines. Luigi's default UI styling is based on [Fundamentals](https://sap.github.io/fundamental-styles/) but it can be customised. If you don’t want to use Fundamentals, but Bootstrap, Material, or something else instead, you need to re-style the Luigi view components according to your design guidelines or replace them with your own components completely.
+
+### I don't want to use the default Fiori Fundamentals style. How can I style Luigi differently?
+
+There are a few options to do that at the moment:
+- Use the Fundamental Styles theming capabilities which already allow you to achieve a lot by customizing the CSS variables. Find more info [here](https://github.com/SAP/theming-base-content).
+- Manually overwrite the styles where needed. The documentation page you are on right now can be used as an example, as it was developed with Luigi!
+- Turn off Luigi view components completely via the [hideNavigation](general-settings.md) parameter in the `settings:` section of your Luigi configuration. Then you can implement your own view components for header and navigation and use the [Luigi Core API](luigi-core-api.md) to set them up with Luigi.
 
 ### Luigi claims to be ‘technology agnostic’. Are you referring to the UI framework that can be used, or to some other technology?
 
@@ -60,53 +77,5 @@ TBD
 ### Is Luigi already being used within any products, or is it still too new?
 
 Yes, it is already being used in production and close-to-production within SAP. For example in Kyma, SAP C/4HANA Cockpit, Context Driven Services, Konduit and Varkes. Outside of SAP, SAAS AG (partner) uses Luigi. Additionally, there are some POCs going on and we're supporting a few other customers and partners who want to start using Luigi soon.
-
-
-### Can I authenticate Luigi with Google Cloud Identity?
-
-Yes, to use Luigi with a Google account, follow these steps:
-
-1. Register a project and generate an OAuth2 Web Client based on [Google Developers Identity - OAuth2UserAgent](https://developers.google.com/identity/protocols/OAuth2UserAgent).
-2. To get your app running locally, set the Autorized JavaScript Origins URIs to `http://localhost:4200` and Authorized redirect URIs to `http://localhost:4200/luigi-core/auth/oauth2/callback.html?storageType=localStorage`.
-3. Copy the Client ID on the right side, ending with `apps.googleusercontent.com`
-4. Update the LuigiConfig auth section. We have added also the parts for logout and getting user information.
-
-```javascript
-  {
-    auth: {
-      use: 'oAuth2ImplicitGrant',
-      oAuth2ImplicitGrant: {
-        authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
-        oAuthData: {
-          response_type: 'id_token token',
-          client_id: 'YOUR_CLIENT_ID...apps.googleusercontent.com',
-          scope: 'openid https://www.googleapis.com/auth/userinfo.email profile',
-        }
-      },
-      logoutFn: async (settings, authData, logoutCallback) => {
-        console.log('revoking token');
-        await fetch(`https://accounts.google.com/o/oauth2/revoke?token=${authData.accessToken}`);
-        logoutCallback();
-        location.href = '/logout.html';
-      }
-    }
-  }
-```
-
-Google's `id_token` contains basic identity data like name and user ID, which allows for this data to be shown in the profile. 
-Additionally, if you would also like to show the user picture, add the following code to enrich the user profile information: 
-
-```javascript
-  userInfoFn: async (settings, authData) => {
-    const response = await fetch('https://www.googleapis.com/oauth2/v1/userinfo', {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Bearer ' + authData.accessToken
-      }
-    });
-    const json = await response.json();
-    return json;
-  },
-```
 
 <!-- accordion:end -->

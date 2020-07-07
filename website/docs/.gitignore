@@ -9,7 +9,8 @@
 extendedConfiguration.bundle.js
 luigi-core
 luigi-client
-public/*
+docsearch.min.css
+public
 static/assets
 *coreStyles*
 navigation-generated.json

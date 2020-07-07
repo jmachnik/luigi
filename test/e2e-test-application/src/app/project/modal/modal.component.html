@@ -1,0 +1,47 @@
+<div
+  *ngIf="modalActive"
+  class="fd-dialog fd-dialog--active"
+  role="dialog"
+  data-testid="luigi-confirmation-modal"
+  aria-hidden="false"
+>
+  <div class="fd-dialog__content fd-dialog__content--s">
+    <header class="fd-dialog__header fd-bar fd-bar--header">
+      <div class="fd-bar__left">
+        <div class="fd-bar__element">
+          <h1 class="fd-dialog__title">Modal Header</h1>
+        </div>
+      </div>
+    </header>
+    <div class="fd-dialog__body">
+      <p>
+        Lorem tipsum dolor sit amet, consectetur adipisicing elit, sed do
+        eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
+        minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+        ex ea commodo consequat. Duis aute irure dolor in reprehenderit in
+        voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+      </p>
+    </div>
+    <footer class="fd-dialog__footer fd-bar fd-bar--footer">
+      <div class="fd-bar__right">
+        <div class="fd-bar__element">
+          <button
+            (click)="onCloseModalClick()"
+            class="fd-dialog__decisive-button fd-button fd-button--emphasized fd-button--compact"
+          >
+            Confirm
+          </button>
+        </div>
+        <div class="fd-bar__element">
+          <button
+            (click)="onCloseModalClick()"
+            class="fd-dialog__decisive-button fd-button fd-button--transparent fd-button--compact"
+            aria-label="close"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </footer>
+  </div>
+</div>

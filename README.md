@@ -31,7 +31,7 @@ For details, see [Luigi documentation](docs/README.md).
 
 ## Browser support
 
-If you want to support Internet Explorer 11 in your application, update your Luigi imports as follows:
+If you want to support Internet Explorer 11 in your application, install the `@luigi-project/core-ie11` package and update your Luigi imports as follows:
 ### Luigi Core
 ```html
 <!DOCTYPE html>
@@ -49,16 +49,15 @@ If you want to support Internet Explorer 11 in your application, update your Lui
 ```
 
 ### Luigi Client
+Install the `@luigi-project/client-ie11` package and update your Luigi imports as follows:
 ```javascript
 import {
   linkManager,
   uxManager
-} from '@kyma-project/luigi-client/luigi-client-ie11';
-// } from '@kyma-project/luigi-client';
+} from '@luigi-project/client-ie11';
 ```
 
-<!-- add-attribute:class:warning -->
-> **NOTE**: The angular example application is not fully compatible with IE11.
+> **NOTE**: The example applications are not fully compatible with IE11.
 
 ## Development
 
@@ -72,7 +71,6 @@ For security reasons, follow these guidelines when developing a micro frontend:
 - Maintain a whitelist with trusted domains and compare it with the origin of the Luigi Core application. The origin will be passed when you call the init listener in your micro frontend. Stop further processing if the origin does not match.
 
 
-<!-- add-attribute:class:success -->
 > **NOTE**: Luigi follows these [sandbox rules for iframes](https://github.com/SAP/luigi/blob/af1deebb392dcec6490f72576e32eb5853a894bc/core/src/utilities/helpers/iframe-helpers.js#L140).
 
 
@@ -86,12 +84,12 @@ To ensure that existing features still work as expected after your changes, run 
 
 ### E2E tests
 
-To ensure that existing features still work as expected after your changes, run UI tests from the [Angular example application](/core/examples/luigi-sample-angular). Before running the tests, start the sample application by using the `npm start` command in the application folder.
+To ensure that existing features still work as expected after your changes, run UI tests from the [Angular example application](/test/e2e-test-application). Before running the tests, start the sample application by using the `npm start` command in the application folder.
 
 When the application is ready:
 
-- Run `npm run e2e:open` in the `core/examples/luigi-sample-angular` folder to start tests in the interactive mode.
-- Run `npm run e2e:run` in the `core/examples/luigi-sample-angular` folder to start tests in the headless browser.
+- Run `npm run e2e:open` in the `test/e2e-test-application` folder to start tests in the interactive mode.
+- Run `npm run e2e:run` in the `test/e2e-test-application` folder to start tests in the headless browser.
 
 ### Backward compatibility tests
 

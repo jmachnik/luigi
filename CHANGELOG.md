@@ -23,6 +23,177 @@ The lerna-changelog tool detects changes based on PR labels and maps them to sec
     ...
   }
 -->
+
+
+## [v1.2.4] (2020-07-02)
+
+#### :bug: Fixed
+* [#1453](https://github.com/SAP/luigi/pull/1453) Fix logout label ([@maxmarkus](https://github.com/maxmarkus))
+* [#1431](https://github.com/SAP/luigi/pull/1431) Fix semicollapsible resize ([@maxmarkus](https://github.com/maxmarkus))
+
+## [v1.2.3] (2020-06-26)
+
+#### :rocket: Added
+* [#1429](https://github.com/SAP/luigi/pull/1429) Added showLabel attribute to node for top level nav ([@azriel46d](https://github.com/azriel46d))
+* [#1409](https://github.com/SAP/luigi/pull/1409) Added badge counter to left navigation ([@azriel46d](https://github.com/azriel46d))
+
+#### :bug: Fixed
+* [#1433](https://github.com/SAP/luigi/pull/1433) Fix double frame ([@hardl](https://github.com/hardl))
+* [#1436](https://github.com/SAP/luigi/pull/1436) Remove window.parent check from Client ([@maxmarkus](https://github.com/maxmarkus))
+
+## [v1.2.2] (2020-06-25)
+* Reverted release.
+
+## [v1.2.1] (2020-06-04)
+
+#### :rocket: Added
+* [#1316](https://github.com/SAP/luigi/pull/1316) Add onNodeChange hook ([@zarkosimic](https://github.com/zarkosimic))
+* [#1326](https://github.com/SAP/luigi/pull/1326) Selected state for product switch items ([@hardl](https://github.com/hardl))
+* [#1304](https://github.com/SAP/luigi/pull/1304) Add possibility to unload Luigi ([@maxmarkus](https://github.com/maxmarkus))
+
+#### :bug: Fixed
+* [#1356](https://github.com/SAP/luigi/pull/1356) Fix client half init state ([@maxmarkus](https://github.com/maxmarkus))
+* [#1374](https://github.com/SAP/luigi/pull/1374) Fix flyout title propagation ([@maxmarkus](https://github.com/maxmarkus))
+* [#1367](https://github.com/SAP/luigi/pull/1367) Add testing production build capability ([@ndricimrr](https://github.com/ndricimrr))
+* [#1364](https://github.com/SAP/luigi/pull/1364) Fix iframe fallback ([@maxmarkus](https://github.com/maxmarkus))
+* [#1376](https://github.com/SAP/luigi/pull/1376) Fix left-nav flyout ([@zarkosimic](https://github.com/zarkosimic))
+* [#1368](https://github.com/SAP/luigi/pull/1368) ContextSwitcher bugfix ([@marynaKhromova](https://github.com/marynaKhromova))
+* [#1335](https://github.com/SAP/luigi/pull/1335) Fix oidc regenerator runtime issue ([@maxmarkus](https://github.com/maxmarkus))
+
+#### :memo: Documentation
+* [#1313](https://github.com/SAP/luigi/pull/1313) Add read-only keyword labels to documentation ([@ndricimrr](https://github.com/ndricimrr))
+
+
+
+
+
+
+## [v1.1.1] (2020-05-07)
+
+#### :rocket: Added
+* [#1317](https://github.com/SAP/luigi/pull/1317) Simple core development setup ([@hardl](https://github.com/hardl))
+
+#### :bug: Fixed
+* [#1318](https://github.com/SAP/luigi/pull/1318) Fix tabnav active state indication ([@hardl](https://github.com/hardl))
+* [#1278](https://github.com/SAP/luigi/pull/1278) Cache improvements for dynamic nodes ([@JohannesDoberer](https://github.com/JohannesDoberer))
+
+#### :memo: Documentation
+* [#1284](https://github.com/SAP/luigi/pull/1284) Documentation for Internationalization i18n ([@maxmarkus](https://github.com/maxmarkus))
+* [#1287](https://github.com/SAP/luigi/pull/1287) Link to 0.7.x documentation ([@alexandra-simeonova](https://github.com/alexandra-simeonova))
+
+
+## [v1.1.0] (2020-04-24)
+
+#### :boom: Breaking Change 
+* [#1267](https://github.com/SAP/luigi/pull/1267) Following an upgrade to Fundamental Library Styles version 0.8.1, there were changes in the HTML structure. Some classes were renamed or removed completely. You can find the full list of Fundamental Library Styles changes [here](https://github.com/SAP/fundamental-styles/wiki/Breaking-Changes).  ([@marynaKhromova](https://github.com/marynaKhromova))
+
+#### :rocket: Added
+* [#1283](https://github.com/SAP/luigi/pull/1283) Translate tooltip text in semi collapsed mode and add title attributes to entries in left nav ([@zarkosimic](https://github.com/zarkosimic))
+* [#1269](https://github.com/SAP/luigi/pull/1269) Oidc provider uses storage type also for oidc client configuration ([@maxmarkus](https://github.com/maxmarkus))
+* [#1241](https://github.com/SAP/luigi/pull/1241) Update fundamental styles to 0.8.1 ([@UlianaMunich](https://github.com/UlianaMunich))
+
+
+#### :bug: Fixed
+* [#1291](https://github.com/SAP/luigi/pull/1291) Fix semicollapsible issue ([@maxmarkus](https://github.com/maxmarkus))
+* [#1271](https://github.com/SAP/luigi/pull/1271) Fix leftnav nav-sync issue ([@maxmarkus](https://github.com/maxmarkus))
+* [#1263](https://github.com/SAP/luigi/pull/1263) Fiddle demo page mobile view ([@UlianaMunich](https://github.com/UlianaMunich))
+
+
+
+
+
+
+
+## [v1.0.1] (2020-04-09)
+
+#### :rocket: Added
+* [#1226](https://github.com/SAP/luigi/pull/1226) Add fromVirtualTreeRoot to linkManager ([@maxmarkus](https://github.com/maxmarkus))
+* [#1222](https://github.com/SAP/luigi/pull/1222) Add fromParent to linkManager ([@ndricimrr](https://github.com/ndricimrr))
+* [#1159](https://github.com/SAP/luigi/pull/1159) Getting notified of unresponsive Luigi clients ([@zarkosimic](https://github.com/zarkosimic))
+
+#### :bug: Fixed
+* [#1251](https://github.com/SAP/luigi/pull/1251) Flyout should close after click ([@marynaKhromova](https://github.com/marynaKhromova))
+* [#1213](https://github.com/SAP/luigi/pull/1213) Fix OIDC storage: none ([@maxmarkus](https://github.com/maxmarkus))
+* [#1220](https://github.com/SAP/luigi/pull/1220) Fix duplicate login logout buttons ([@maxmarkus](https://github.com/maxmarkus))
+
+
+## [v1.0.0] (2020-03-26)
+
+#### :rocket: Added
+* [#1151](https://github.com/SAP/luigi/pull/1151) Add customSelectedOptionRenderer to style ContextSwitcher dropdown button ([@ndricimrr](https://github.com/ndricimrr))
+* [#1058](https://github.com/SAP/luigi/pull/1058) Refactor authorisation to activate idp providers before Luigi is rendered ([@maxmarkus](https://github.com/maxmarkus))
+* [#1055](https://github.com/SAP/luigi/pull/1055) Externalize auth providers ([@maxmarkus](https://github.com/maxmarkus))
+* [#912](https://github.com/SAP/luigi/issues/912) Switch to fundamental styles ([@marynaKhromova](https://github.com/marynaKhromova))
+
+#### :bug: Fixed
+* [#1189](https://github.com/SAP/luigi/pull/1189) Modal window contrast on dark themes ([@marynaKhromova](https://github.com/marynaKhromova))
+* [#1158](https://github.com/SAP/luigi/pull/1158) Aligned splitview and centered arrow ([@ndricimrr](https://github.com/ndricimrr))
+
+#### :memo: Documentation
+* [#1155](https://github.com/SAP/luigi/pull/1155) Document potential wrong-usage of context/dynamic nodes ([@alexandra-simeonova](https://github.com/alexandra-simeonova))
+* [#1135](https://github.com/SAP/luigi/pull/1135) Add fundamental library styles section to migration docu ([@marynaKhromova](https://github.com/marynaKhromova))
+
+
+
+## [v0.7.7] (2020-03-20)
+
+#### :bug: Fixed
+* [#1172](https://github.com/SAP/luigi/pull/1172) Fix virtualtree trailing slash ([@maxmarkus](https://github.com/maxmarkus))
+* [#1179](https://github.com/SAP/luigi/pull/1179) Fix navigate ok check for withoutSync ([@maxmarkus](https://github.com/maxmarkus))
+* [#1173](https://github.com/SAP/luigi/pull/1173) Recalculation after cache deletion ([@JohannesDoberer](https://github.com/JohannesDoberer))
+* [#1148](https://github.com/SAP/luigi/pull/1148) deleteCache was missing in contextswitcher ([@JohannesDoberer](https://github.com/JohannesDoberer))
+* [#1145](https://github.com/SAP/luigi/pull/1145) Route change loses context in contextswitcher ([@JohannesDoberer](https://github.com/JohannesDoberer))
+
+#### :memo: Documentation
+* [#1060](https://github.com/SAP/luigi/pull/1060) Luigi Videos ([@alexandra-simeonova](https://github.com/alexandra-simeonova))
+* [#1116](https://github.com/SAP/luigi/pull/1116) Add implementations/scenarios ([@alexandra-simeonova](https://github.com/alexandra-simeonova))
+
+
+## [v0.7.6] (2020-03-09)
+
+#### :rocket: Added
+* [#1075](https://github.com/SAP/luigi/pull/1075) Virtual tree navigation ([@maxmarkus](https://github.com/maxmarkus))
+* [#1111](https://github.com/SAP/luigi/pull/1111) Ability to update core URL without micro frontend URL change ([@maxmarkus](https://github.com/maxmarkus))
+* [#1076](https://github.com/SAP/luigi/pull/1076) Core API: Add splitview functionality ([@ndricimrr](https://github.com/ndricimrr))
+* [#1129](https://github.com/SAP/luigi/pull/1129) OpenIdConnect (OIDC) provider profile interceptor ([@maxmarkus](https://github.com/maxmarkus))
+
+#### :bug: Fixed
+* [#1119](https://github.com/SAP/luigi/pull/1119) Refactor resolved node children data management ([@JohannesDoberer](https://github.com/JohannesDoberer))
+* [#1115](https://github.com/SAP/luigi/pull/1115) Profile icon tooltip text ([@maxmarkus](https://github.com/maxmarkus))
+
+#### :memo: Documentation
+* [#1109](https://github.com/SAP/luigi/pull/1109) Document how to make use of contextUpdateListener ([@alexandra-simeonova](https://github.com/alexandra-simeonova))
+* [#1096](https://github.com/SAP/luigi/pull/1096) Document how to set auth storage type ([@alexandra-simeonova](https://github.com/alexandra-simeonova))
+* [#1099](https://github.com/SAP/luigi/pull/1099) Update documentation for examples + consolidate filenames ([@alexandra-simeonova](https://github.com/alexandra-simeonova))
+
+
+## [v0.7.5] (2020-02-14)
+
+#### :rocket: Added
+* [#1083](https://github.com/SAP/luigi/pull/1083) Open profile items in a modal window ([@zarkosimic](https://github.com/zarkosimic))
+
+#### :bug: Fixed
+* [#1081](https://github.com/SAP/luigi/pull/1081) CustomMessages from external mf does not work ([@JohannesDoberer](https://github.com/JohannesDoberer))
+* [#1068](https://github.com/SAP/luigi/pull/1068) Fix fd-modal mix-up ([@JohannesDoberer](https://github.com/JohannesDoberer))
+
+## [v0.7.4] (2020-01-29)
+
+#### :rocket: Added
+* [#1034](https://github.com/SAP/luigi/pull/1034) Add valid href to navigation links ([@maxmarkus](https://github.com/maxmarkus))
+
+#### :bug: Fixed
+* [#1065](https://github.com/SAP/luigi/pull/1065) Fix items calculation in more btn of tab nav ([@JohannesDoberer](https://github.com/JohannesDoberer))
+* [#1047](https://github.com/SAP/luigi/pull/1047) Custom options renderer config error ([@maxmarkus](https://github.com/maxmarkus))
+
+#### :memo: Documentation
+* [#1025](https://github.com/SAP/luigi/pull/1025) Improve API documentation ([@alexandra-simeonova](https://github.com/alexandra-simeonova))
+* [#1024](https://github.com/SAP/luigi/pull/1024) Improve authorization doc structure ([@alexandra-simeonova](https://github.com/alexandra-simeonova))
+* [#1000](https://github.com/SAP/luigi/pull/1000) Improve Overview page ([@alexandra-simeonova](https://github.com/alexandra-simeonova))
+* [#965](https://github.com/SAP/luigi/pull/965) Improve application-setup.md ([@alexandra-simeonova](https://github.com/alexandra-simeonova))
+* [#877](https://github.com/SAP/luigi/pull/877) Create content guidelines ([@alexandra-simeonova](https://github.com/alexandra-simeonova))
+* [#1003](https://github.com/SAP/luigi/pull/1003) Documentation fixes ([@alexandra-simeonova](https://github.com/alexandra-simeonova))
+
+
 ## [v0.7.3] (2019-12-19)
 
 #### :rocket: Added
@@ -624,3 +795,16 @@ The lerna-changelog tool detects changes based on PR labels and maps them to sec
 [v0.7.1]: https://github.com/SAP/luigi/compare/v0.7.0...v0.7.1
 [v0.7.2]: https://github.com/SAP/luigi/compare/v0.7.1...v0.7.2
 [v0.7.3]: https://github.com/SAP/luigi/compare/v0.7.2...v0.7.3
+[v0.7.4]: https://github.com/SAP/luigi/compare/v0.7.3...v0.7.4
+[v0.7.5]: https://github.com/SAP/luigi/compare/v0.7.4...v0.7.5
+[v0.7.6]: https://github.com/SAP/luigi/compare/v0.7.5...v0.7.6
+[v0.7.7]: https://github.com/SAP/luigi/compare/v0.7.6...v0.7.7
+[v1.0.0]: https://github.com/SAP/luigi/compare/v0.7.7...v1.0.0
+[v1.0.1]: https://github.com/SAP/luigi/compare/v1.0.0...v1.0.1
+[v1.1.0]: https://github.com/SAP/luigi/compare/v1.0.1...v1.1.0
+[v1.1.1]: https://github.com/SAP/luigi/compare/v1.1.0...v1.1.1
+[v1.2.1]: https://github.com/SAP/luigi/compare/v1.1.1...v1.2.1
+
+[v1.2.2]: https://github.com/SAP/luigi/compare/v1.2.1...v1.2.2
+[v1.2.3]: https://github.com/SAP/luigi/compare/v1.2.2...v1.2.3
+[v1.2.4]: https://github.com/SAP/luigi/compare/v1.2.3...v1.2.4

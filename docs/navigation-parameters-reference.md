@@ -35,14 +35,17 @@ You can configure the way Luigi tackles routing in your application in the `rout
 ### useHashRouting
 - **type**: boolean
 - **description**: defines either hash-based (`example.com/#/yourpath`) or path-based (`example.com/yourpath`) routing.
+- **default**: the default is `false`, which means path routing is used.
 
 ### nodeParamPrefix
 - **type**: string
-- **description**: sets the prefix character when using the `LuigiClient.linkManager().withParam()` function, which provides a simple way to attach query parameters to a view URL for activities such as sorting and filtering. The default character is `~`, but you may also define a custom one. Only this prefix can pass query parameters to micro frontends. A different prefix has to be used to pass parameters to the Luigi app itself to avoid potential conflicts between the two.
+- **description**: sets the prefix character when using the `LuigiClient.linkManager().withParam()` function, which provides a simple way to attach query parameters to a view URL for activities such as sorting and filtering. Only this prefix can pass query parameters to micro frontends. A different prefix has to be used to pass parameters to the Luigi app itself to avoid potential conflicts between the two.
+- **default**: the default prefix character is `~`, but you may also define a custom one.
 
 ### skipRoutingForUrlPatterns
 - **type**: RegExp[]
-- **description**: defines regex patterns the router will skip when listening for path changes. This parameter is used for excluding **redirect_uri** parameters. Default patterns are `[/access_token=/, '/id_token=/]`.
+- **description**: defines regex patterns the router will skip when listening for path changes. This parameter is used for excluding **redirect_uri** parameters.
+- **default**: the default patterns are `[/access_token=/, '/id_token=/]`.
 
 ### pageNotFoundHandler
 - **type**: any
@@ -53,15 +56,38 @@ You can configure the way Luigi tackles routing in your application in the `rout
 
 
 ## Navigation parameters
-The node navigation parameters allow you to configure global navigation settings under the `navigation:` section in the configuration file.
+The navigation parameters allow you to configure **global** navigation settings directly under the `navigation:` section in the configuration file.
+
+### addNavHrefs
+- **type**: boolean
+- **description**: if set to `true`, proper href attributes are added to all navigation links. It is set to `false` by default.
+- **since**: v0.7.4
 
 ### nodeAccessibilityResolver
 - **type**: any
-- **description**: receives all values defined in the node configuration. It allows you to define a permission checker function that gets executed on every node. If it returns `false`, Luigi removes the node and its children from the navigation structure. See [angular navigation.js](../core/examples/luigi-sample-angular/src/luigi-config/extended/navigation.js) for an example.
+- **description**: receives all values defined in the node configuration. It allows you to define a permission checker function that gets executed on every node. If it returns `false`, Luigi removes the node and its children from the navigation structure. See [angular navigation.js](../test/e2e-test-application/src/luigi-config/extended/navigation.js) for an example.
+
+### nodeChangeHook
+- **type**: function
+- **description**: allows you to invoke and execute a specific function on the global level when a request to navigate to the node occurs. The function receives two node objects as input parameters: the previous node and current node, as described in the configuration. 
 
 ### defaults.isolateView
 - **type**: boolean
-- **description**: renders all views in new frames. This setting overrides the same-domain frame reuse. The **defaults.isolateView** is disabled by default, and you can overwrite it using the **isolateView** value on a single node level.
+- **description**: renders all views in new frames. This setting overrides the same-domain frame reuse.
+- **default**: the parameter **defaults.isolateView** is `false` by default, and you can overwrite it using the **isolateView** value on a single node level.
+
+### defaults.pageErrorHandler
+<!-- add-attribute:class:warning -->
+> **NOTE**: The **pageErrorHandler** only works if the [loading indicator](#loadingindicatorenabled) is not disabled.
+- **type**: object
+- **description**: gives you the possibility to handle a situation in which Luigi Client doesn't respond. By default, it will redirect to the home page if nothing else is specified. **timeout** is required.
+- **default**: the parameter **defaults.pageErrorHandler** is not specified by default, and you can overwrite it using the **pageErrorHandler** value on a single node level.
+- **attributes**:
+  - **timeout** amount of time after which redirection will take effect.
+  - **viewUrl** specifies the location to redirect to on the micro frontend level (the main URL is not changed).
+  - **redirectPath** specifies the location to redirect to on the Luigi level (the main URL is changed).
+  - **errorFn** used to handle different scenarios other than redirection.
+- **since**: v1.0.1
 
 ### preloadViewGroups
 - **type**: boolean
@@ -103,7 +129,7 @@ Node parameters are all the parameters that can be added to an individual naviga
 
 ### testId
 - **type**: string
-- **description**: allows you to define your own custom **testId**. If you do not specify it, it is a combination of the node's **pathSegment** followed by an underscore and the label, written as one word in lower case. If the **pathSegment** does not exist, the **testId** includes the label only. This way, you can have `pathsegment_label` or `label`.
+- **description**: allows you to define your own custom **testId** to be used in E2E tests. If you do not specify it, it is a combination of the node's **pathSegment** followed by an underscore and the label, written as one word in lower case. If the **pathSegment** does not exist, the **testId** includes the label only. This way, you can have `pathsegment_label` or `label`.
 
 ### hideFromNav
 - **type**: boolean
@@ -114,8 +140,6 @@ Node parameters are all the parameters that can be added to an individual naviga
 - **description**: contains the URL or path to a view which renders when you click the navigation node. Use either a full URL or a relative path. If **viewUrl** is undefined, Luigi activates the child node specified in **defaultChildNode**. When both **viewUrl** and **defaultChildNode** are undefined, Luigi opens the first child of the current node. **viewUrl** can contain variables from:
   * dynamic path segments
   * node parameters
-  * contexts
-
 
 ### navigationContext
 - **type**: string
@@ -123,7 +147,7 @@ Node parameters are all the parameters that can be added to an individual naviga
 
 ### context
 - **type**: object
-- **description**: sends the specified object as context to the view. Use this parameter in combination with the dynamic **pathSegment** to receive the context through the context listeners of **Luigi Client**. This is an alternative to using the dynamic value in the **viewUrl**.
+- **description**: sends the specified object as a context to the micro frontend.
 
 ### defaultChildNode
 - **type**: string
@@ -156,7 +180,8 @@ settings: {
 
 ### isolateView
 - **type**: boolean
-- **description**: renders the view in a new frame when you enter and leave the node. This setting overrides the same-domain frame re-usage. The **isolateView** is disabled by default.
+- **description**: renders the view in a new frame when you enter and leave the node. This setting overrides the same-domain frame re-usage.
+- **default**: `false`
 
 ### viewGroup
 - **type**: string
@@ -168,16 +193,18 @@ settings: {
 
 ### loadingIndicator.enabled
 - **type**: boolean
-- **description**: shows a loading indicator when switching between micro frontends. If you have a fast micro frontend, you can disable this feature to prevent flickering of the loading indicator. This parameter is enabled by default.
+- **description**: shows a loading indicator when switching between micro frontends. If you have a fast micro frontend, you can disable this feature to prevent flickering of the loading indicator.
+- **default**: `true`
 - **example**:
     ```javascript
     loadingIndicator: {
-      enabled: true
+      enabled: false
     }
    ```
 ### loadingIndicator.hideAutomatically
 - **type**: boolean
-- **description**: if set to `false`, it disables the automatic hiding of the loading indicator once the micro frontend is loaded. It is only considered if the loading indicator is enabled. It does not apply if the loading indicator is activated manually with the `LuigiClient.uxManager().showLoadingIndicator()` function. If the loading indicator is enabled and automatic hiding is disabled, use `LuigiClient.uxManager().hideLoadingIndicator()` to hide it manually in your micro frontend during the startup. This parameter is enabled by default.
+- **description**: if set to `false`, it disables the automatic hiding of the loading indicator once the micro frontend is loaded. It is only considered if the loading indicator is enabled. It does not apply if the loading indicator is activated manually with the `LuigiClient.uxManager().showLoadingIndicator()` function. If the loading indicator is enabled and automatic hiding is disabled, use `LuigiClient.uxManager().hideLoadingIndicator()` to hide it manually in your micro frontend during the startup.
+- **default**: `true`
 - **example**:
     ```javascript
     loadingIndicator: {
@@ -186,7 +213,11 @@ settings: {
     ```
 ### icon
 - **type**: string
-- **description**: the name of an icon, without the `sap-icon--` prefix. Its source may be [OpenUI](https://openui5.hana.ondemand.com/1.40.10/iconExplorer.html) or a custom link (relative or absolute) to an image. The icon is displayed next to the node label in the side navigation or instead of the label in the top navigation.
+- **description**: the name of an icon, without the `sap-icon--` prefix. Its source may be [OpenUI](https://openui5.hana.ondemand.com/1.40.10/iconExplorer.html) or a custom link (relative or absolute) to an image. It is recommended to use a square image. The icon is displayed next to the node label in the side navigation or instead of the label in the top navigation. To show the label next to the icon in the top navigation, add the `showLabel` attribute.
+
+### showLabel
+- **type**: boolean
+- **description**: Forces the label to be visible in the top navigation even if an icon is set.
 
 ### altText
 - **type**: string
@@ -194,11 +225,12 @@ settings: {
 
 ### hideSideNav
 - **type**: boolean
-- **description**: if set to `true`, the left navigation disappears when you click the affected node. It is set to `false` by default.
+- **description**: if set to `true`, the left navigation disappears when you click the affected node.
+- **default**: `false`
 
 ### badgeCounter
 - **type**: object
-- **description**: adds a badge with a number and a label to a node. Nodes that are part of a category show a cumulated number of all badges in this category. **badgeCounter** is only available for top navigation items.
+- **description**: adds a badge with a number and a label to a node. Nodes that are part of a category show a cumulated number of all badges in this category. 
 - **attributes**:
   - **label** is the label of the badge.
   - **count** is a function or asynchronous function that returns a number.
@@ -206,13 +238,13 @@ settings: {
 
 ### category
 - **type**: string or object
-- **description**: defines a group of views separated with a headline and an icon. You should define at least one node in a group should as an Object with **label** and **icon** attributes. For all other nodes, you can set **category** as a string with the `label` value.
+- **description**: defines a group of views separated with a headline and an icon. You should define at least one node in a group as an Object with **label** and **icon** attributes. For all other nodes, you can set **category** as a string with the `label` value.
 - **attributes**:
   - **label** is a string that represents the title of the category.
-  - **icon** is the name of an icon, without the `sap-icon--` prefix. Its source may be [OpenUI](https://openui5.hana.ondemand.com/1.40.10/iconExplorer.html) or a custom link (relative or absolute) to an image. The icon is displayed next to the node label in the side navigation or instead of the label in the top navigation. In case you accidentally define different icons in a category group, only the first one is used.
+  - **icon** is the name of an icon, without the `sap-icon--` prefix. Its source may be [OpenUI](https://openui5.hana.ondemand.com/1.40.10/iconExplorer.html) or a custom link (relative or absolute) to an image. It is recommended to use a square image. The icon is displayed next to the node label in the side navigation or instead of the label in the top navigation. In case you accidentally define different icons in a category group, only the first one is used.
   - **altText** adds the HTML `alt` attribute to an icon. Note that this property only applies to icons with a defined absolute or relative path.
   - **collapsible** if set to `true`, category items are hidden at first. To expand them, click the main category node.
-  - **testId** is a string where you can define your own custom `testId`. If nothing is specified, it is the node's label written as one word in lower case, for example`label`.
+  - **testId** is a string where you can define your own custom `testId` for  E2E tests. If nothing is specified, it is the node's label written as one word in lower case, for example`label`.
 
 ### openNodeInModal
 - **type**: boolean or object
@@ -238,10 +270,39 @@ settings: {
 ### tabNav
 - **type**: boolean
 - **description**: renders the children of the node as a horizontal navigation bar. Sub-children are not supported. When you categorize nodes you will get a drop-down menu in the horizontal navigation.
+- **since**: v0.7.0
 
 ### anonymousAccess
 - **type**: boolean or "exclusive"
 - **description**: when set to `true`, the node is always accessible. When set to `exclusive`, the node is only visible in logged-out state. Requires **auth.disableAutoLogin** to be set to `true`. **anonymousAccess** needs to be defined both on parent and child nodes.
+
+### virtualTree
+- **type**: boolean
+- **description**: marks the node as the beginning of a virtual tree. Allows navigation to any of its children's paths without the need of specifying nested children. The path that comes after the node marked as **virtualTree** is appended to its **viewUrl**. [**keepSelectedForChildren**](#keepSelectedForChildren) is automatically applied. This feature is often used in combination with [LinkManager().withoutSync().navigate](luigi-client-api.md#withoutsync) to be able to keep a micro frontend's existing router links.
+- **example**:
+    In this example, navigating to `core.tld/settings/some/nested/view` will result in opening `/sampleapp.html#/settings/some/nested/view`.
+    ```javascript
+    {
+      pathSegment: 'settings',
+      label: 'Settings',
+      viewUrl: '/sampleapp.html#/settings',
+      navigationContext: 'settings',
+      virtualTree: true
+    }
+    ```
+- **since**: v0.7.6
+
+### pageErrorHandler
+<!-- add-attribute:class:warning -->
+> **NOTE**: The **pageErrorHandler** only works if the [loading indicator](#loadingindicatorenabled) is not disabled.
+- **type**: object
+- **description**: gives you the possibility to handle a situation in which Luigi Client doesn't respond. By default, it will redirect to the home page if nothing else is specified. **timeout** is required.
+- **attributes**:
+  - **timeout** amount of time after which redirection will take effect.
+  - **viewUrl** specifies the location to redirect to on the micro frontend level (the main URL is not changed).
+  - **redirectPath** specifies the location to redirect to on the Luigi level (the main URL is changed).
+  - **errorFn** used to handle different scenarios other than redirection.
+  - **since**: v1.0.1
 
 ## Context switcher
 
@@ -257,7 +318,8 @@ The context switcher is a drop-down list available in the top navigation bar. It
 
 ### lazyloadOptions
 - **type**: boolean
-- **description**: defines when to fetch **options**. When set to `true`, loads **options** when you click the context switcher. It doesn't involve any caching. When set to `false`, loads **options** once the page loads. The default value is `true`.
+- **description**: defines when to fetch **options**. When set to `true`, loads **options** when you click the context switcher. It doesn't involve any caching. When set to `false`, loads **options** once the page loads.
+- **default**: `true`
 
 ### options
 - **type**: array
@@ -265,11 +327,19 @@ The context switcher is a drop-down list available in the top navigation bar. It
 - **attributes**:
   - **label** defines the context element label. If not defined, the **pathValue** is passed to **fallbackLabelResolver** to set its value. The default value is **pathValue**, if **fallbackLabelResolver** is not defined.
   - **pathValue** defines the context element path that is appended to **parentNodePath** and reflects a **pathSegment**.
+  - **customRendererCategory** defines a custom category for the option, which can be used by **customSelectedOptionRenderer** function to customize the rendering of the option when selected
+
+### customSelectedOptionRenderer
+- **type**: function
+- **parameters**: [option](navigation-parameters-reference.md#options)
+- **description**: enables you to customize the selected option of the dropdown button of the context switcher by rendering HTML code inside a `<button>`. The function takes an  **option** object as a parameter. It is recommended to use this function carefully because it is possible to inject JavaScript code.
+- **since**: v1.0.0
 
 ### customOptionsRenderer
 - **type**: function
 - **parameters**: [option](navigation-parameters-reference.md#options), isSelected
-- **description**: - **description**: enables you to add custom items to the context switcher by rendering code inside a `<li>` element. The function take an **option** object and a boolean **isSelected** as a parameter. It is recommended to use this function carefully because it is possible to inject JavaScript code.
+- **description**: enables you to add custom items to the context switcher by rendering code inside a `<li>` element. The function takes an **option** object and a boolean **isSelected** as a parameter. It is recommended to use this function carefully because it is possible to inject JavaScript code.
+- **since**: v0.7.3
 
 
 ### actions
@@ -277,7 +347,7 @@ The context switcher is a drop-down list available in the top navigation bar. It
 - **description**: defines a list of additional elements that are shown on above or below the context switcher **options**.
 - **attributes**:
   - **label** defines the action element label.
-  - **testId** is a string where you can define your own custom `testId`. If nothing is specified, it is the node's label written as one word and lower case (e.g. `label`).
+  - **testId** is a string where you can define your own custom `testId` for E2E tests. If nothing is specified, it is the node's label written as one word and lower case (e.g. `label`).
   - **position** defines the action element position. Can be `top` or `bottom`. The default value is `top`. This parameter
  is optional.
   - **link** defines an absolute Link to a **node**. This parameter
@@ -296,6 +366,11 @@ The context switcher is a drop-down list available in the top navigation bar. It
 - **type**: boolean
 - **description**: if set to `false`, the drop-down is not shown on click if there is only one option and no actions.
 - **default**: `true`
+- **since**: v0.7.3
+
+### Icon
+- **type**: string
+- **description**: is the name of an icon from the [OpenUI](https://openui5.hana.ondemand.com/1.40.10/iconExplorer.html). It's displayed on smaller screens next to the default label or the selected context in a dropdown for the top navigation nodes. There is a default icon if nothing is set.
 
 ## Profile
 
@@ -305,9 +380,9 @@ The profile section is a configurable drop-down list available in the top naviga
 - **type**: object
 - **description**: defines a list of additional elements that are shown on above or below the context switcher **options**.
 - **attributes**:
-  - **label** overrides the text for the logout item. The default value is "Sign Out".
-  - **testId** is a string where you can define your own custom `testId`. If nothing is specified, it is the node's label written as one word and lower case (e.g. `label`).
-  - **icon** overrides the icon for the logout item. The default value is [SAP UI5 log icon](https://sapui5.hana.ondemand.com/test-resources/sap/m/demokit/iconExplorer/webapp/index.html#/overview/SAP-icons/?tag=logout).
+  - **label** overrides the text for the logout item. The default value is `Sign Out`.
+  - **testId** is a string where you can define your own custom `testId` for E2E tests. If nothing is specified, it is the node's label written as one word and lower case (e.g. `label`).
+  - **icon** overrides the icon for the logout item. The default value is the [SAP UI5 log icon](https://sapui5.hana.ondemand.com/test-resources/sap/m/demokit/iconExplorer/webapp/index.html#/overview/SAP-icons/?tag=logout).
   - **altText** adds the HTML `alt` attribute to an icon. Note that this property only applies to icons with a defined absolute or relative path.
   - **customLogoutFn** defines a function to implement your own logout functionality. Use this function only if no IDP is configured. If you define IDP with a corresponding [logout function](authorization-configuration.md), the **customLogoutFn** set for a profile is ignored.
 
@@ -316,20 +391,21 @@ The profile section is a configurable drop-down list available in the top naviga
 - **description**: an array of objects, each one being a link to a Luigi navigation node or an external URL.
 - **attributes**:
   - **label** defines the text for the link.
-  - **testId** is a string where you can define your own custom `testId`. If nothing is specified, it is the node's label written as one word and lower case (e.g. `label`).
+  - **testId** is a string where you can define your own custom `testId` for E2E tests. If nothing is specified, it is the node's label written as one word and lower case (e.g. `label`).
   - **icon** is the name of an icon from the [OpenUI](https://openui5.hana.ondemand.com/1.40.10/iconExplorer.html) or a custom link (relative or absolute) to an image displayed next to the label or instead of it.
   - **altText** adds the HTML `alt` attribute to an icon. Note that this property only applies to icons with a defined absolute or relative path.
   - **link** defines an absolute link to a **node**.
   - **externalLink** is an object which indicates that the node links to an external URL. If this parameter
  is defined, the **link** parameter
  is ignored. It has the following attributes:
-    - **sameWindow** defines if the external URL is opened in the current tab or in a new one. The default value for this parameter
+    - **sameWindow** defines if the external URL is opened in the current tab or in a new one. The default value for this attribute
    is `false`.
     - **url** is the external URL that the link leads to.
 
 ### staticUserInfoFn
 - **type**: function
 - **description**: used to retrieve a user's name and email to simulate logging in. It can be used when authorization is disabled and also gets called if the defined IDP provider does not have **settings.userInfoFn** defined or does not provide a `userInfo` function internally. It can be asynchronous and should return an object with **name**, **email** and **picture** parameters.
+- **since**: v0.6.5
 
 <!-- add-attribute:class:warning -->
 >**NOTE:** Neither **authorization** nor **profile** parameter is configured if the profile section in the top navigation bar is not visible.
@@ -344,7 +420,7 @@ The product switcher is a pop-up window available in the top navigation bar. It 
 
 ### testId
 - **type**: string
-- **description**: enables you to define your own custom `testId`. If nothing is specified, it is the node's label written as one word and lower case (e.g. `label`).
+- **description**: enables you to define your own custom `testId` for E2E tests. If nothing is specified, it is the node's label written as one word and lower case (e.g. `label`).
 
 ### icon
 - **type**: string
@@ -354,19 +430,25 @@ The product switcher is a pop-up window available in the top navigation bar. It 
 - **type**: string
 - **description**: adds the HTML `alt` attribute to an icon. Note that this property only applies to icons with a defined absolute or relative path.
 
+### columns
+- **type**: number
+- **description**: gives the possibility to define a number of columns to display products. It may be 3 or 4 columns. If nothing is specified, it is 4 columns by default.
+
 ### items
 - **type**: array
 - **description**: an array of objects, each one being a link to a Luigi navigation node or an external URL. An item can have several attributes.
 - **attributes**:
   - **label** defines the text for the link.
-  - **testId** is a string where you can define your own custom `testId`. If nothing is specified, it is the node's label written as one word and lower case (e.g. `label`).
+  - **subTitle** defines an additional text line for the link.
+  - **testId** is a string where you can define your own custom `testId` for E2E tests. If nothing is specified, it is the node's label written as one word and lower case (e.g. `label`).
   - **icon** is the name of an icon from the [OpenUI](https://openui5.hana.ondemand.com/1.40.10/iconExplorer.html) or a custom link (relative or absolute) to an image displayed next to the label or instead of it.
   - **altText** adds the HTML `alt` attribute to an icon. Note that this property only applies to icons with a defined absolute or relative path.
   - **link** defines an absolute link to a **node**.
+  - **selected** if set to true, the item is displayed in selected state, useful e.g. if the item refers to the current product.
   - **externalLink** is an object which indicates that the node links to an external URL. If this parameter
  is defined, the **link** parameter
  is ignored. It has the following attributes:
-    - **sameWindow** defines if the external URL is opened in the current tab or in a new one. The default value for this parameter
+    - **sameWindow** defines if the external URL is opened in the current tab or in a new one. The default value for this attribute
    is `false`.
     - **url** is the external URL that the link leads to.
 

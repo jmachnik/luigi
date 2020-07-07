@@ -262,6 +262,63 @@ class GenericHelpersClass {
       input
     );
   }
+
+  /**
+   * Returns a new Object with the same object,
+   * without the keys that were given.
+   * References still stay.
+   * Allows wildcard ending keys
+   *
+   * @param {Object} input any given object
+   * @param {Array} of keys, allows also wildcards at the end, like: _*
+   */
+  removeProperties(input, keys) {
+    const res = {};
+    if (!keys instanceof Array || !keys.length) {
+      console.error(
+        '[ERROR] removeProperties requires second parameter: array of keys to remove from object.'
+      );
+      return input;
+    }
+    for (const key in input) {
+      if (input.hasOwnProperty(key)) {
+        const noFullMatch = keys.filter(k => key.includes(k)).length === 0;
+        const noPartialMatch =
+          keys
+            .filter(k => k.endsWith('*'))
+            .map(k => k.slice(0, -1))
+            .filter(k => key.startsWith(k)).length === 0;
+        if (noFullMatch && noPartialMatch) {
+          res[key] = input[key];
+        }
+      }
+    }
+    return res;
+  }
+
+  /**
+   * Compares two semver versions and returns 1, 0 or -1
+   * Can be used as sort function.
+   * Limited to full number comparisons, ignores dev, rc, next versions.
+   * @param {string} a source
+   * @param {string} b target
+   * @example
+   * semverCompare('1.0.0', '0.7.7')
+   * ['1.3', '1.2', '1.4', '1.1'].sort(semverCompare)
+   */
+  semverCompare(a, b) {
+    var pa = a.split('-')[0].split('.');
+    var pb = b.split('-')[0].split('.');
+    for (var i = 0; i < 3; i++) {
+      var na = Number(pa[i]);
+      var nb = Number(pb[i]);
+      if (na > nb) return 1;
+      if (nb > na) return -1;
+      if (!isNaN(na) && isNaN(nb)) return 1;
+      if (isNaN(na) && !isNaN(nb)) return -1;
+    }
+    return 0;
+  }
 }
 
 export const GenericHelpers = new GenericHelpersClass();

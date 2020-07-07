@@ -35,10 +35,16 @@ class Navigation {
       {
         pathSegment: 'docs',
         label: 'Documentation',
-        viewUrl: baseUrl + '/docs',
         children: getDocuItems(),
         context: {
           coreBaseUrl: window.location.origin
+        }
+      },
+      {
+        label: 'Blog',
+        externalLink: {
+          url: 'https://luigi-project.io/blog',
+          sameWindow: true
         }
       },
       {

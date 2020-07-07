@@ -3,21 +3,27 @@
 <nav class="fd-menu">
   <ul class="fd-menu__list">
     {#if showUserInfo}
-    <li>
+    <li class="fd-menu__item">
       <span
         aria-label="Username"
         id="username"
-        class="fd-has-type-2"
+        class="lui-username fd-has-type-1"
         data-testid="luigi-topnav-profile-username"
       >{userInfo.name ? userInfo.name : userInfo.email}</span>
     </li>
     {/if}
     {#each profileNav.items as profileItem}
     <li
+      class="fd-menu__item"
       on:click="{() => onActionClick(profileItem)}"
       data-testid="{getTestId(profileItem)}"
     >
-      <a class="fd-menu__item" data-testid="luigi-topnav-profile-item">
+      <a
+        class="fd-menu__link"
+        data-testid="luigi-topnav-profile-item"
+        href="{getRouteLink(profileItem)}"
+        on:click|preventDefault="{() => {}}"
+      >
         {#if profileItem.icon}
         {#if hasOpenUIicon(profileItem)}
         <span
@@ -31,13 +37,20 @@
         >
         {/if}
         {/if}
-        <span>{$getTranslation(profileItem.label)}</span>
+        <span
+          class="fd-menu__title"
+        >{$getTranslation(profileItem.label)}</span>
       </a>
     </li>
     {/each}
     {#if isAuthorizationEnabled || isProfileLogoutItem}
-    <li on:click="{onLogoutClick}" data-testid="{getTestId(profileNav.logout)}">
-      <a aria-label="Logout" class="fd-menu__item">
+    {#if isLoggedIn || !isAuthorizationEnabled && isProfileLogoutItem}
+    <li
+      class="fd-menu__item"
+      on:click="{onLogoutClick}"
+      data-testid="{getTestId(profileNav.logout)}"
+    >
+      <a aria-label="Logout" class="fd-menu__link" data-testid="logout-link">
         {#if profileNav.logout.icon}
         {#if hasOpenUIicon(profileNav.logout)}
         <span
@@ -51,12 +64,17 @@
         >
         {/if}
         {/if}
-        <span>{$getTranslation(profileNav.logout.label)}</span>
+        <span
+          class="fd-menu__title"
+        >{$getTranslation(profileNav.logout.label)}</span>
       </a>
     </li>
-    {#if !isLoggedIn && !isProfileLogoutItem}
-    <li on:click="{startAuthorization}">
-      <a aria-label="Login" class="fd-menu__item">Login</a>
+    {/if}
+    {#if isAuthorizationEnabled && !isLoggedIn}
+    <li class="fd-menu__item" on:click="{startAuthorization}">
+      <a aria-label="Login" class="fd-menu__link" data-testid="login-link">
+        <span class="fd-menu__title">Login</span>
+      </a>
     </li>
     {/if}
     {/if}
@@ -64,214 +82,59 @@
 </nav>
 {/if}
 <script>
+  import { AuthLayerSvc } from './services';
   import { createEventDispatcher, onMount, getContext } from 'svelte';
   import { LuigiAuth, LuigiConfig } from './core-api';
   import {
     AuthHelpers,
     GenericHelpers,
     NavigationHelpers,
-    StateHelpers
+    StateHelpers,
+    RoutingHelpers
   } from './utilities/helpers';
   import { AuthStoreSvc, Routing } from './services';
-  import { oAuth2ImplicitGrant } from './providers/auth/oAuth2ImplicitGrant';
-  import { openIdConnect } from './providers/auth/openIdConnect';
   import { TOP_NAV_DEFAULTS } from './utilities/luigi-config-defaults';
 
   const dispatch = createEventDispatcher();
 
-  let idpProviderInstance;
-  const standardProviders = {
-    mockAuth: oAuth2ImplicitGrant,
-    oAuth2ImplicitGrant,
-    openIdConnect
-  };
-  export let userInfo;
   export let isHidden = false;
-  export let isLoggedIn;
-  export let profileNav = { logout: {}, items: [] };
-  export let isAuthorizationEnabled;
-  export let isProfileLogoutItem;
-  let urlAuthError;
+
+  let idpProviderInstance;
+  let userInfo;
+  let isLoggedIn;
+  let profileNav = { logout: {}, items: [] };
+  let isAuthorizationEnabled;
+  let isProfileLogoutItem;
   let navProfileListenerInstalled;
-  let profileLogoutfnDefinded;
+  let profileLogoutFnDefined;
   let store = getContext('store');
   let getTranslation = getContext('getTranslation');
   let getUnsavedChangesModalPromise = getContext(
     'getUnsavedChangesModalPromise'
   );
-
-  const isAuthValid = () =>
-    AuthHelpers.getStoredAuthData().accessTokenExpirationDate >
-    Number(new Date());
-
-  const IdpProviderException = message => {
-    return { message, name: 'IdpProviderException' };
-  };
-
-  const getIdpProviderInstance = async (
-    idpProviderName,
-    idpProviderSettings
-  ) => {
-    if (GenericHelpers.isFunction(standardProviders[idpProviderName])) {
-      return new standardProviders[idpProviderName](idpProviderSettings);
-    }
-
-    // custom provider provided via config:
-    const customIdpProvider = GenericHelpers.getConfigValueFromObject(
-      idpProviderSettings,
-      'customIdpProvider'
-    );
-    if (customIdpProvider) {
-      const customIdpInstance = new customIdpProvider(idpProviderSettings);
-      ['login'].forEach(requiredFnName => {
-        if (!GenericHelpers.isFunction(customIdpInstance[requiredFnName])) {
-          throw IdpProviderException(
-            `${requiredFnName} function does not exist in custom IDP Provider ${idpProviderName}`
-          );
-        }
-      });
-
-      return customIdpInstance;
-    }
-
-    const onAuthConfigError = GenericHelpers.isFunction(
-      LuigiConfig.getConfigValue('auth.events.onAuthConfigError')
-    );
-    if (onAuthConfigError) {
-      await LuigiAuth.handleAuthEvent('onAuthConfigError', {
-        idpProviderName: idpProviderName,
-        type: 'IdpProviderException'
-      });
-    } else {
-      throw IdpProviderException(
-        `IDP Provider ${idpProviderName} does not exist.`
-      );
-    }
-  };
+  let openViewInModal = getContext('openViewInModal');
 
   onMount(async () => {
     if (!LuigiAuth.isAuthorizationEnabled()) {
       isAuthorizationEnabled = false;
-      setProfileNavData();
       setProfileUserData();
-      return;
     } else {
       isAuthorizationEnabled = true;
     }
-    const idpProviderName = LuigiConfig.getConfigValue('auth.use');
-    const idpProviderSettings = LuigiConfig.getConfigValue(
-      `auth.${idpProviderName}`
-    );
+    setProfileNavData();
 
-    const checkAuth = async idpProviderSettings => {
-      const authData = AuthHelpers.getStoredAuthData();
-      if (!authData || !isAuthValid()) {
-        if (LuigiConfig.getConfigValue('auth.disableAutoLogin')) {
-          return;
-        }
-
-        /**
-         * onAuthExpired
-         * If onAuthExpired exists, it will be evaluated.
-         * Continues with the standard authorization flow,
-         * if `onAuthExpired` it returns undefined or truthy value.
-         */
-        let startAuth = true;
-        if (authData) {
-          startAuth = await LuigiAuth.handleAuthEvent(
-            'onAuthExpired',
-            idpProviderSettings
-          );
-        }
-        if (startAuth) {
-          startAuthorization();
-        }
-        return;
-      }
-
-      setProfileNavData();
-
-      if (
-        idpProviderInstance.settings &&
-        GenericHelpers.isFunction(idpProviderInstance.settings.userInfoFn)
-      ) {
-        idpProviderInstance.settings
-          .userInfoFn(idpProviderInstance.settings, authData)
-          .then(res => {
-            userInfo = res;
-            isLoggedIn = true;
-            dispatch('userInfoUpdated', userInfo);
-          });
-      } else {
-        if (GenericHelpers.isFunction(idpProviderInstance.userInfo)) {
-          idpProviderInstance.userInfo(idpProviderSettings).then(res => {
-            userInfo = res;
-            isLoggedIn = true;
-            dispatch('userInfoUpdated', userInfo);
-          });
-        } else {
-          isLoggedIn = true;
-          setProfileUserData();
-        }
-      }
-
-      const hasAuthSuccessFulFn = GenericHelpers.isFunction(
-        LuigiConfig.getConfigValue('auth.events.onAuthSuccessful')
-      );
-      if (hasAuthSuccessFulFn && AuthStoreSvc.isNewlyAuthorized) {
-        AuthStoreSvc.removeNewlyAuthorized();
-        await LuigiAuth.handleAuthEvent(
-          'onAuthSuccessful',
-          idpProviderSettings,
-          authData
-        );
-      }
-
-      if (
-        GenericHelpers.isFunction(idpProviderInstance.setTokenExpirationAction)
-      ) {
-        idpProviderInstance.setTokenExpirationAction();
-      }
-      if (
-        GenericHelpers.isFunction(idpProviderInstance.setTokenExpireSoonAction)
-      ) {
-        idpProviderInstance.setTokenExpireSoonAction();
-      }
-    };
-
-    /**
-     * Prevent IDP Provider initialization, if an error is present
-     * in the url params and onAuthError is defined in the user config.
-     * errors are represented by `error` and `errorDescription` param.
-     */
-    const uaError = urlAuthError || {};
-    const noError = await AuthHelpers.handleUrlAuthErrors(
-      idpProviderSettings,
-      uaError.error,
-      uaError.errorDescription
-    );
-    if (!noError) {
-      return;
-    }
-
-    idpProviderInstance = getIdpProviderInstance(
-      idpProviderName,
-      idpProviderSettings
-    );
-    if (GenericHelpers.isPromise(idpProviderInstance)) {
-      return idpProviderInstance
-        .then(resolved => {
-          idpProviderInstance = resolved;
-          checkAuth(idpProviderSettings);
-        })
-        .catch(err => {
-          const errorMsg = `Error: ${err.message || err}`;
-          console.error(errorMsg, err.message && err);
-          LuigiConfig.setErrorMessage(errorMsg);
-        });
-    }
-    checkAuth(idpProviderSettings);
+    AuthLayerSvc.getLoggedInStore().subscribe(loggedIn => {
+      isLoggedIn = loggedIn;
+    });
+    AuthLayerSvc.getUserInfoStore().subscribe(uInfo => {
+      userInfo = uInfo;
+      dispatch('userInfoUpdated', userInfo);
+    });
   });
+
+  function startAuthorization() {
+    AuthLayerSvc.startAuthorization();
+  }
 
   function hasOpenUIicon(node) {
     return NavigationHelpers.isOpenUIiconName(node.icon);
@@ -281,6 +144,9 @@
     return profileItem.testId
       ? profileItem.testId
       : NavigationHelpers.prepareForTests(profileItem.label);
+  }
+  function getRouteLink(node) {
+    return RoutingHelpers.getNodeHref(node);
   }
 
   // [svelte-upgrade suggestion]
@@ -303,13 +169,18 @@
             ...TOP_NAV_DEFAULTS.logout,
             ...logoutItem
           };
-          isProfileLogoutItem = !!logoutItem;
-          profileLogoutfnDefinded = false;
-          if (logoutItem) {
-            const profileLogoutfn = logoutItem.customLogoutFn;
-            if (profileLogoutfn && GenericHelpers.isFunction(profileLogoutfn)) {
-              profileLogoutfnDefinded = true;
-            }
+
+          isProfileLogoutItem = Boolean(logoutItem);
+          profileLogoutFnDefined = false;
+          AuthLayerSvc.setProfileLogoutFn(null);
+          if (
+            logoutItem &&
+            GenericHelpers.isFunction(logoutItem.customLogoutFn)
+          ) {
+            // TODO: PROFNAVLOGOUT: three smiliar implementations.
+            // TODO: whats the difference between this profileLogoutFn, profileNav, auth-layer
+            profileLogoutFnDefined = true;
+            AuthLayerSvc.setProfileLogoutFn(logoutItem.customLogoutFn);
           }
           profileNav = profileNavData;
         },
@@ -324,25 +195,23 @@
       'navigation.profile.staticUserInfoFn'
     );
     if (uInfo) {
+      AuthLayerSvc.setUserInfo(userInfo);
       userInfo = uInfo;
       dispatch('userInfoUpdated', userInfo);
     }
   }
 
-  export function startAuthorization() {
-    if (idpProviderInstance) {
-      idpProviderInstance.login().then(res => {
-        AuthStoreSvc.setNewlyAuthorized();
-        if (res) {
-          alert(res);
-        }
-      });
-    }
-  }
-
   export function onActionClick(item) {
     getUnsavedChangesModalPromise().then(() => {
-      Routing.navigateToLink(item);
+      if (item.openNodeInModal) {
+        const route = RoutingHelpers.buildRoute(item, `${item.link}`);
+        openViewInModal(
+          route,
+          item.openNodeInModal === true ? {} : item.openNodeInModal
+        );
+      } else {
+        Routing.navigateToLink(item);
+      }
     });
     dispatch('toggleDropdownState');
   }
@@ -351,38 +220,18 @@
     getUnsavedChangesModalPromise().then(() => {
       if (isAuthorizationEnabled) {
         logout();
-      } else if (isProfileLogoutItem && profileLogoutfnDefinded) {
+      } else if (isProfileLogoutItem && profileLogoutFnDefined) {
+        // TODO: PROFNAVLOGOUT: check if auth-layer logout _profileLogoutFn is a duplicate
+        // TODO: PROFNAVLOGOUT: three smiliar implementations. profilen
         profileNav.logout.customLogoutFn();
       } else {
-        console.error('No IDP logout or customLogoutFn is defined.');
+        console.error('No IDP provider or profile.customLogoutFn is defined.');
       }
     });
   }
 
   export function logout() {
-    const authData = AuthHelpers.getStoredAuthData();
-    const logoutCallback = async redirectUrl => {
-      await LuigiAuth.handleAuthEvent(
-        'onLogout',
-        idpProviderInstance.settings,
-        undefined,
-        redirectUrl
-      );
-      isLoggedIn = false;
-      AuthStoreSvc.removeAuthData();
-    };
-    const customLogoutFn = LuigiConfig.getConfigValue(
-      `auth.${LuigiConfig.getConfigValue('auth.use')}.logoutFn`
-    );
-    if (GenericHelpers.isFunction(customLogoutFn)) {
-      customLogoutFn(idpProviderInstance.settings, authData, logoutCallback);
-    } else if (GenericHelpers.isFunction(idpProviderInstance.logout)) {
-      idpProviderInstance.logout(authData, logoutCallback);
-    } else if (isProfileLogoutItem && profileLogoutfnDefinded) {
-      profileNav.logout.customLogoutFn();
-    } else {
-      logoutCallback(idpProviderInstance.settings.logoutUrl);
-    }
+    AuthLayerSvc.logout();
   }
 
   export let showUserInfo;
@@ -398,9 +247,8 @@
   .nav-icon {
     height: 2em;
   }
-  #username {
+  .lui-username {
     display: block;
-    padding: 10px 24px;
-    cursor: default;
+    padding: 0.75rem 1rem 0.75rem 0.75rem;
   }
 </style>

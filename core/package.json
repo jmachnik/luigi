@@ -1,40 +1,44 @@
 {
   "name": "luigi-core-private",
-  "version": "0.7.3",
   "private": true,
   "description": "luigi-core development version, only the public folder is being published to npm as a package",
   "devDependencies": {
-    "@babel/cli": "^7.6.2",
+    "@babel/cli": "^7.6.4",
     "@babel/core": "^7.6.2",
     "@babel/node": "^7.6.2",
     "@babel/plugin-transform-runtime": "^7.6.2",
     "@babel/polyfill": "^7.6.0",
     "@babel/preset-env": "^7.6.2",
     "@babel/register": "^7.6.2",
+    "@sap-theming/theming-base-content": "^11.1.18",
     "@webcomponents/webcomponentsjs": "^2.3.0",
-    "acorn": "^6.1.1",
+    "acorn": "^6.4.1",
     "axios": ">=0.18.1",
     "babel-loader": "^8.0.4",
     "bundlesize": "^0.17.0",
     "chai": "^4.2.0",
     "clean-webpack-plugin": "^1.0.0",
-    "copy-webpack-plugin": "^4.5.2",
+    "copy-webpack-plugin": "^5.1.1",
     "core-js": "^3.2.1",
     "css-loader": "^3.0.0",
     "file-loader": "^2.0.0",
-    "fiori-fundamentals": "1.6.0",
+    "fs-extra": "9.0.0",
+    "fundamental-styles": "^0.8.1",
     "jsdom": "15.0.0",
     "jsdom-global": "3.0.2",
+    "live-server": "^1.2.1",
     "lodash": ">=4.17.13",
     "lodash.template": ">=4.5.0",
     "mini-css-extract-plugin": "^0.8.0",
-    "mocha": "^6.1.4",
-    "node-sass": "^4.12.0",
-    "nyc": "^14.0.0",
+    "mkdirp": "^1.0.3",
+    "mocha": "^7.1.1",
+    "node-sass": "^4.14.1",
+    "nyc": "^15.0.0",
     "oidc-client": "^1.5.2",
     "postcss-loader": "^3.0.0",
     "postcss-preset-env": "^6.6.0",
     "regenerator-runtime": "^0.13.3",
+    "serialize-javascript": ">=2.1.1",
     "sinon": "^7.3.2",
     "source-map-loader": "^0.2.3",
     "style-loader": "^0.23.1",
@@ -44,10 +48,9 @@
     "tar": ">=4.4.2",
     "terser": "^4.4.0",
     "url-loader": "^1.0.1",
-    "webpack": "^4.40.2",
-    "webpack-cli": "^3.3.9",
+    "webpack": "^4.42.1",
     "webpack-bundle-analyzer": "^3.6.0",
-    "serialize-javascript": ">=2.1.1"
+    "webpack-cli": "^3.3.9"
   },
   "scripts": {
     "bundle": "npm run bundle-evergreen && npm run bundle-ie11",
@@ -60,7 +63,8 @@
     "test:watch": "npm run test -- --watch",
     "bundlesize": "npm run bundle && bundlesize",
     "bundlesizeOnly": "bundlesize",
-    "helper:webpack-analyze": "ANALYZE=true npm run bundle-evergreen"
+    "helper:webpack-analyze": "ANALYZE=true npm run bundle-evergreen",
+    "simpledev": "node ./dev-tools/simpledev.js"
   },
   "bundlesize": [
     {
@@ -70,16 +74,16 @@
     },
     {
       "path": "./public/luigi.css",
-      "maxSize": "400 kB",
+      "maxSize": "450 kB",
       "compression": "none"
     },
     {
-      "path": "./public/luigi-ie11.js",
-      "maxSize": "500 kB",
+      "path": "./public-ie11/luigi-ie11.js",
+      "maxSize": "550 kB",
       "compression": "none"
     },
     {
-      "path": "./public/luigi-ie11.css",
+      "path": "./public-ie11/luigi-ie11.css",
       "maxSize": "550 kB",
       "compression": "none"
     }
@@ -97,7 +101,7 @@
       ],
       "functions": [
         55,
-        65
+        60
       ],
       "branches": [
         55,
@@ -129,9 +133,5 @@
     "type": "git",
     "url": "ssh://github.com/SAP/luigi.git"
   },
-  "dependencies": {
-    "npm": ">=6.13.4",
-    "test": "^0.6.0",
-    "diff": ">=3.5.0"
-  }
+  "dependencies": {}
 }

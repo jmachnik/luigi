@@ -24,6 +24,7 @@ This document shows you how to configure the following Luigi features:
 * [Context switcher](#context-switcher) 
 * [Product switcher](#product-switcher) 
 * [App switcher](#app-switcher) 
+* [Tab navigation](#tab-navigation)
 * [Additional options](#additional-options)
 
 ## View groups
@@ -124,7 +125,7 @@ You can specify them in the main application URL, similarly to URL query paramet
 
 All parameters without the prefix are not passed to the micro frontend and are consumed by the main application.
 
-A sample **viewUrl** `https://[YOUR.WEBSITE]/home/users/allUsers?~sorting=asc&~page=2` supports sorting and paging by introducing the **sort** and **page** node parameters.
+A sample **viewUrl** `https://[YOUR.WEBSITE]/home/users/allUsers?~sorting=asc&~page=2` supports sorting and pagination by introducing the **sort** and **page** node parameters.
 
 Using dynamic node parameters in the previous example results in:
 
@@ -207,37 +208,19 @@ Luigi.setConfig({
 
 ## Contexts
 
-Contexts can serve as an alternative way to create a dynamically changeable path in the **viewUrl**. They are used together with path parameters and utilize the Luigi Client to receive contexts for the micro frontends.
-
-You can create a context by adding these parameters to your node:
-
-### navigationContext
-- **type**: string
-- **description**: contains a named node that is mainly for use in combination with a dynamic **pathSegment** to start navigation from a dynamic node using `LuigiClient.linkManager().fromContext('contextname')`.
+The purpose of contexts is to send objects to the micro frontend. You can do this by adding this parameter to your node:
 
 ### context
 - **type**: object
 - **description**: sends the specified object as context to the view. Use this property in combination with the dynamic **pathSegment** to receive the context through the context listeners of Luigi Client. This is an alternative to using the dynamic value in the **viewUrl**.
 
-Here is an example of a dynamic navigation node including a context:
+<!-- add-attribute:class:warning -->
+> **NOTE**: Context should not be used to create the path or URL as this can lead to errors. Please use one of the methods described in the [dynamically changeable paths](#dynamically-changeable-paths) section instead.
 
-```javascript
-...
-      {
-        navigationContext: 'contextName',
-        pathSegment: ':projectId',
-        testId: 'myTestId',
-        viewUrl: '/some/path/:projectId',
-        context: {
-          projectId: ':projectId'
-        },
-        children: [node, node, node]
-      }
-```
 
 ## Profile
 
-<img src="https://github.com/SAP/luigi/raw/c70658fcb78c48012303a4e59012d5d158ca46b3/docs/assets/profile.png" width="628">
+![Profile](assets/profile.jpg)
 
 The profile is a drop-down list in the top navigation that allows you to override the logout item content if authorization is already configured. You can also add links to Luigi navigation nodes.
 
@@ -246,18 +229,19 @@ You can configure the profile element in the top navigation by adding the **prof
 Example:
 
 ```javascript
-  profile: {
-      logout: {
-        label: 'End session'
-        icon: "sys-cancel",
-        customLogoutFn: myLogoutFn
-      },
+profile: {
+  logout: {
+    label: 'End session'
+    icon: "sys-cancel",
+    customLogoutFn: myLogoutFn
+  },
+}
 ```
 
 
 ## Context switcher
 
-<img src="https://github.com/SAP/luigi/raw/c70658fcb78c48012303a4e59012d5d158ca46b3/docs/assets/context-switcher.png" width="628">
+![Context switcher](assets/context-switcher.jpg)
 
 The context switcher is a drop-down element in the top navigation. It allows you to switch between a curated list of navigation elements such as Environments. To do so, add the **contextSwitcher** property to the navigation object. Find all the parameters you can use to configure it [here](navigation-parameters-reference.md#context-switcher).
 
@@ -265,53 +249,64 @@ The context switcher is a drop-down element in the top navigation. It allows you
 
 ```javascript
 contextSwitcher: {
-      defaultLabel: 'Select Environment ...',
-      testId: 'myTestId',
-      parentNodePath: '/environments',
-      lazyloadOptions: false,
-      fallbackLabelResolver: (id) => (id.toUpperCase()),
-      options: [{label,pathValue}, {label,pathValue}],
-      customOptionsRenderer: (option, isSelected) => {let className = 'fd-menu__item' + (isSelected ? ' is-selected' : '');
-      return `<a class="${className}">${option.label} test</a>`;},
-      actions: [{label,link,position,clickHandler?}]
-    },
+  defaultLabel: 'Select Environment ...',
+  testId: 'myTestId',
+  parentNodePath: '/environments',
+  lazyloadOptions: false,
+  fallbackLabelResolver: (id) => (id.toUpperCase()),
+  options: [{label, pathValue,customRendererCategory}, {label, pathValue, customRendererCategory}],
+  customSelectedOptionRenderer: (option) => {
+    let color = "white";
+    if (option.customRendererCategory === 'production') {
+      color = "#87FF00";
+    } else if (option.customRendererCategory === 'stage') {
+      color = "#00C9FF";
+    }
+    return  `<label style="color:${color}">${option.label} </label>`;
+  },
+  customOptionsRenderer: (option, isSelected) => {
+    let className = 'fd-menu__item' + (isSelected ? ' is-selected' : '');
+    return `<a class="${className}">${option.label} test</a>`;
+  },
+  actions: [{label,link,position,clickHandler?}]
+},
 ```
 
 ## Product switcher
 
-<img src="https://github.com/SAP/luigi/raw/c70658fcb78c48012303a4e59012d5d158ca46b3/docs/assets/product-switcher.png" width="704">
+![Product switcher](assets/product-switcher.jpg)
 
 The product switcher is window in top the navigation which allows you to switch between navigation elements displayed there. To add it to your application, include the **productSwitcher** property in your **navigation** object. You may also add any of the parameters listed [here](navigation-parameters-reference.md#product-switcher).
 
 Example:
 ```javascript
 productSwitcher: {
-      label: 'My Products',
+  label: 'My Products',
+  testId: 'myTestId',
+  icon: 'grid',
+  items: [
+    {
+      icon: '',
+      label: 'Luigi in Github',
       testId: 'myTestId',
-      icon: 'grid',
-      items: [
-        {
-          icon: '',
-          label: 'Luigi in Github',
-          testId: 'myTestId',
-          externalLink: {
-            url: 'https://luigi-project.io/',
-            sameWindow: false
-          }
-        },
-        {
-          icon: '',
-          label: 'Project 1',
-          testId: 'myTestId',
-          link: '/projects/pr1'
-        }
-      ]
+      externalLink: {
+        url: 'https://luigi-project.io/',
+        sameWindow: false
+      }
     },
+    {
+      icon: '',
+      label: 'Project 1',
+      testId: 'myTestId',
+      link: '/projects/pr1'
+    }
+  ]
+},
 ```
 
 ## App switcher
 
-<img src="https://github.com/SAP/luigi/raw/c70658fcb78c48012303a4e59012d5d158ca46b3/docs/assets/app-switcher.png" width="407">
+![App switcher](assets/app-switcher.jpg)
 
 The app switcher is a drop-down in top the navigation which allows you to switch between applications. To use it, add the **appSwitcher** property in your **navigation** object. You may also add any of the parameters listed [here](navigation-parameters-reference.md#app-switcher).
 
@@ -319,21 +314,31 @@ Example:
 
 ```javascript
 appSwitcher = {
-    showMainAppEntry: true,
-    items: [
-      {
-        title: 'Application One',
-        subTitle: 'the first app',
-        link: '/projects/pr1'
-      },
-      {
-        title: 'Application Two',
-        link: '/projects/pr2',
-        subTitle: 'the second app'
-      },
-    ]
-  };
+  showMainAppEntry: true,
+  items: [
+    {
+      title: 'Application One',
+      subTitle: 'the first app',
+      link: '/projects/pr1'
+    },
+    {
+      title: 'Application Two',
+      link: '/projects/pr2',
+      subTitle: 'the second app'
+    },
+  ]
+};
 ```
+
+## Tab navigation
+
+![Tab navigation](assets/tabnav.jpg)
+
+Tab-style navigation in Luigi can be displayed directly above the micro frontend area, providing you with additional menu options. When you put tab navigation nodes into a [category](navigation-configuration.md#category), they will be rendered in a drop-down. Add this parameter to your configuration to create tab navigation nodes:
+
+### tabNav
+- **type**: boolean
+- **description**: renders the children of the node as a horizontal navigation bar. Sub-children are not supported. When you categorize nodes you will get a drop-down menu in the horizontal navigation.
 
 ## Additional options
 
@@ -342,7 +347,6 @@ For more options and parameters which you can use to configure navigation in Lui
 * Defining the [routing](navigation-parameters-reference.md#routing-parameters) strategy of your application
 * Enabling and disabling the [loading indicator](navigation-parameters-reference.md#loadingindicatorenabled)
 * Hiding [navigation nodes](navigation-parameters-reference.md#hidefromnav) or [side navigation](navigation-parameters-reference.md#hidesidenav)
-* Including a horizontal [tab navigation](navigation-parameters-reference.md#tabnav) bar
 * Displaying content in a [modal](navigation-parameters-reference.md#opennodeinmodal)
 * Adding a [badge counter](navigation-parameters-reference.md#badgecounter) to your nodes
-* Defining a custom [testId](navigation-parameters-reference.md#testid) for your nodes
+* Defining a custom [testId](navigation-parameters-reference.md#testid) for end-to-end tests

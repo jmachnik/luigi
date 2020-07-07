@@ -7,7 +7,8 @@ import { Iframe } from '../../src/services/iframe';
 import {
   GenericHelpers,
   RoutingHelpers,
-  IframeHelpers
+  IframeHelpers,
+  NavigationHelpers
 } from '../../src/utilities/helpers';
 import { LuigiConfig } from '../../src/core-api';
 
@@ -17,8 +18,18 @@ describe('Iframe', () => {
   let component;
 
   beforeEach(() => {
+    global['sessionStorage'] = {
+      getItem: sinon.stub(),
+      setItem: sinon.stub()
+    };
+    global['localStorage'] = {
+      getItem: sinon.stub(),
+      setItem: sinon.stub()
+    };
     clock = sinon.useFakeTimers();
-    let lastObj = {};
+    let lastObj = {
+      isNavigationSyncEnabled: true
+    };
     component = {
       set: obj => {
         Object.assign(lastObj, obj);
@@ -26,6 +37,9 @@ describe('Iframe', () => {
       get: () => lastObj,
       prepareInternalData: () => {}
     };
+    sinon.stub(Iframe, 'setOkResponseHandler');
+    sinon.stub(Iframe, 'initHandshakeFailed').returns(false);
+    sinon.stub(NavigationHelpers, 'handleUnresponsiveClient');
     sinon.stub(LuigiConfig, 'getConfigValue').callsFake();
     sinon.stub(GenericHelpers);
     GenericHelpers.getRandomId.returns('abc');
@@ -114,19 +128,6 @@ describe('Iframe', () => {
     });
   });
 
-  it('removeIframe', () => {
-    const testNode = {
-      children: ['one', 'two', 'three', 'four'],
-      removeChild: sinon.spy()
-    };
-    Iframe.removeIframe('two', testNode);
-    assert.equal(testNode.removeChild.callCount, 1, 'removeChild call count');
-    assert(
-      testNode.removeChild.calledWith('two'),
-      'correct node child was deleted'
-    );
-  });
-
   describe('create new iframe with different viewgroup and dont delete the previous one (cache)', () => {
     it('navigate', () => {
       sinon.stub(IframeHelpers, 'getMainIframes').callsFake(() => [
@@ -191,7 +192,6 @@ describe('Iframe', () => {
 
   describe('check if luigi respond, if not, callback again to replace the iframe', () => {
     it('navigate', () => {
-      const spy = sinon.spy(console, 'info');
       sinon.stub(IframeHelpers, 'getMainIframes').callsFake(() => [
         {
           src: 'http://url.com/app.html!#/prevUrl',
@@ -216,9 +216,129 @@ describe('Iframe', () => {
       });
       assert.equal(config.iframe.src, 'http://luigi.url.de');
       Iframe.navigateIframe(config, component, node);
-      clock.tick(3000);
-      assert(spy.called, 'console.info() call');
+
+      assert(Iframe.setOkResponseHandler.called, 'setOkResponseHandler call');
       assert.equal(config.iframe.src, 'http://url.com/app.html!#/prevUrl');
+    });
+  });
+
+  // If with setTimeout, async clock does not work.
+  xdescribe('setOkResponseHandler', () => {
+    beforeEach(() => {
+      Iframe.setOkResponseHandler.restore();
+    });
+    beforeEach(() => {
+      sinon.restore();
+    });
+    it('ok', () => {
+      sinon.stub(Iframe, 'navigateIframe');
+      const config = {
+        navigateOk: true,
+        iframe: {
+          src: 'http://luigi.url.de'
+        }
+      };
+      component.set({
+        currentNode: {}
+      });
+
+      assert.isTrue(config.navigateOk);
+
+      Iframe.setOkResponseHandler(config, component, node);
+      clock.tick(3000);
+
+      assert.isUndefined(config.navigateOk);
+      assert.deepEqual(config, {
+        navigateOk: undefined,
+        iframe: {
+          src: 'http://luigi.url.de'
+        }
+      });
+      assert(
+        Iframe.navigateIframe.notCalled,
+        'Iframe.navigateIframe not called'
+      );
+    });
+    it('not ok', () => {
+      sinon.stub(Iframe, 'navigateIframe');
+      sinon.stub(console, 'info');
+      const config = {
+        navigateOk: undefined,
+        iframe: {
+          src: 'http://luigi.url.de'
+        }
+      };
+      component.set({
+        currentNode: {}
+      });
+
+      Iframe.setOkResponseHandler(config, component, node);
+      clock.tick(3000);
+
+      assert.isUndefined(config.navigateOk);
+      assert.deepEqual(config, {
+        navigateOk: undefined,
+        iframe: undefined,
+        isFallbackFrame: true
+      });
+      assert(console.info.called, 'console.info called');
+      assert(Iframe.navigateIframe.called, 'Iframe.navigateIframe called');
+    });
+  });
+
+  describe('checkIframe', () => {
+    let viewUrl;
+    let config;
+    let node;
+    beforeEach(() => {
+      component.set({
+        showLoadingIndicator: true
+      });
+      viewUrl = '/something';
+      config = {};
+      node = {};
+      // NavigationHelpers.handleUnresponsiveClient = sinon.spy();
+    });
+    afterEach(() => {
+      sinon.restore();
+    });
+
+    it('if viewUrl is defined ', () => {
+      // given
+      const errorHandlerNode = {
+        timeout: 1000,
+        viewUrl: '/somewhere',
+        redirectPath: '/',
+        errorFn: () => {
+          console.log('Works!');
+        }
+      };
+
+      // when
+      Iframe.checkIframe(errorHandlerNode, component, viewUrl, config, node);
+      clock.tick(2000);
+
+      // then
+      assert.deepEqual(component.get().viewUrl, '/somewhere');
+      assert(Iframe.setOkResponseHandler.called, 'setOkResponseHandler() call');
+    });
+
+    it('if viewUrl is not defined', async () => {
+      // given
+      const errorHandlerNode = {
+        timeout: 1000,
+        redirectPath: '/'
+      };
+
+      // when
+      Iframe.checkIframe(errorHandlerNode, component, viewUrl, config, node);
+      clock.tick(2000);
+
+      // then
+      assert(
+        NavigationHelpers.handleUnresponsiveClient.called,
+        'handleUnresponsiveClient() call'
+      );
     });
   });
 
@@ -257,6 +377,43 @@ describe('Iframe', () => {
       assert.equal(config.iframe.luigi.nextViewUrl, 'http://luigi.url.de/2');
       Iframe.navigateIframe(config, component, node);
       assert.equal(config.iframe.luigi.nextViewUrl, 'http://luigi.url.de/1m');
+    });
+  });
+
+  describe('using withoutSync whould not trigger iframe fallback', () => {
+    it('navigate', () => {
+      const spy = sinon.spy(console, 'info');
+      spy.resetHistory();
+
+      sinon.stub(IframeHelpers, 'getMainIframes').callsFake(() => [
+        {
+          src: 'http://url.com/app.html!#/prevUrl',
+          style: { display: 'block' },
+          vg: 'tets1',
+          luigi: {}
+        }
+      ]);
+      const config = {
+        iframe: {
+          src: 'http://luigi.url.de',
+          vg: 'tets2'
+        }
+      };
+      component.set({
+        viewUrl: 'http://luigi.url.de/1',
+        viewGroup: 'tets1',
+        previousNodeValues: {
+          viewUrl: 'http://luigi.url.desdf/1'
+        },
+        currentNode: {},
+        isNavigationSyncEnabled: false
+      });
+      assert.equal(config.iframe.src, 'http://luigi.url.de');
+      Iframe.navigateIframe(config, component, node);
+      clock.tick(3000);
+      assert(spy.notCalled, 'console.info() call should not apply');
+      // assert.equal(config.iframe.src, 'http://luigi.url.de');
+      assert.isTrue(component.get().isNavigationSyncEnabled);
     });
   });
 });

@@ -1,5 +1,5 @@
 <script>
-  import * as luigiCorePkg from '../node_modules/@kyma-project/luigi-core/package.json';
+  import * as luigiCorePkg from '../node_modules/@luigi-project/core/package.json';
   import defaultConfig from './defaultConfig.js';
   import { onMount } from 'svelte';
 
@@ -13,15 +13,18 @@
   }
 
   function reloadConfig() {
-	let customConfig = sessionStorage.getItem('fiddle');
-	let customConfigPreviousSession = localStorage.getItem('fiddle');
-	if(!customConfig && customConfigPreviousSession) {
-		if (confirm('We found a fiddle from a previous session. Do you want to restore it?')) {
-			customConfig = customConfigPreviousSession;
-        	sessionStorage.setItem('fiddle', customConfig);
-		}
-	}
+      let customConfig = sessionStorage.getItem('fiddle');
+      let customConfigPreviousSession = localStorage.getItem('fiddle');
 
+      // check if config saved from a previous session
+      if(!customConfig && customConfigPreviousSession) {
+        if (confirm('We found a fiddle from a previous session. Do you want to restore it?')) {
+          customConfig = customConfigPreviousSession;
+          sessionStorage.setItem('fiddle', customConfig);
+        }
+      }
+      
+    // try to execyte custom configuration or defaut
     try {
       if (!customConfig) {
         sessionStorage.setItem('fiddle', defaultConfigString);
@@ -94,6 +97,32 @@
     bottom: 50px !important;
   }
 
+  :global(body) {
+    font-family: var(--sapFontFamily, "72", "72full", Arial, Helvetica, sans-serif);
+  }
+
+  :global(#ext-cookiebar) {
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: 10px 5px;
+    background: rgba(0,0,0,.6);
+    font-size: 12px;
+    color: white;
+    text-align: center;
+    box-sizing: border-box;
+    z-index: 1000;
+  }
+
+  :global(#ext-cookiebar a) {
+    color: #2deb8a;
+  }
+
+  :global(#ext-cookiebar a:hover) {
+    text-decoration: none;
+  }
+
   .fiddle-toolbar {
     border-top: 1px solid rgb(48, 48, 48);
     background: #3c4553;
@@ -103,6 +132,15 @@
     width: 100%;
     z-index: 1;
     display: none;
+  }
+
+  .fiddle-toolbar .fd-action-bar {
+    background: none;
+    padding: 0.5rem;
+  }
+
+  .fiddle-toolbar .title-wrapper {
+    flex-grow: 1;
   }
 
   .fiddle-toolbar .fd-link {
@@ -121,6 +159,10 @@
     z-index: 2;
   }
 
+  :global(.editorVisible) .fd-dialog {
+    display: flex;
+  }
+
   #editor, #editorTA {
     width: 100%;
     height: calc(100vh - 300px);
@@ -133,18 +175,16 @@
 
   .fd-action-bar__header {
     overflow: visible;
-    padding-left: 5px;
     color: white;
     font-size: 0.8em;
-    margin-top: -3px;
   }
 
   .fd-action-bar__header a.fd-link {
     margin-left: 10px;
   }
 
-  .fd-action-bar > .fd-action-bar__actions {
-    margin: -3px 5px 2px -5px;
+  .fd-action-bar__header img {
+    vertical-align: middle;
   }
 
   .btn-primary {
@@ -182,25 +222,34 @@
   }
 </style>
 
-<div class="editor_container fd-shell__overlay fd-overlay fd-overlay--modal">
-  <div class="fd-modal" role="dialog" style="width:80%; max-width:80%;">
-    <div class="fd-modal__content" role="document">
-      <header class="fd-modal__header">
-        <h1 class="fd-modal__title">Luigi Config</h1>
-        <button
-          class="fd-button--light fd-modal__close"
-          on:click={closeConfig} />
+<div class="editor_container">
+  <div class="fd-dialog" role="dialog">
+    <div class="fd-dialog__content" role="document"  style="width:80%; max-width:80%;">
+      <header class="fd-dialog__header fd-bar fd-bar--header">
+        <div class="fd-bar__left">
+          <div class="fd-bar__element">
+            <h3 class="fd-dialog__title">Luigi Config</h3>
+          </div>
+        </div>
       </header>
-      <div class="fd-modal__body_nostyle">
+      <div class="fd-dialog__body fd-dialog__body--no-vertical-padding">
         <div id="editor" class="lui-mobile-hide"/>
-		<textarea id="editorTA" class="lui-mobile-show"/>
+		    <textarea id="editorTA" class="lui-mobile-show"/>
       </div>
-      <footer class="fd-modal__footer">
-        <div class="fd-modal__actions">
-          <button class="fd-button--light" on:click={resetConfig}>Reset</button>
-          <button class="fd-button lui-mobile-hide" on:click={saveConfig}>Apply</button>
-          <button class="fd-button lui-mobile-show" on:click={saveConfigTA}>Apply</button>
-          <button class="fd-button--light" on:click={closeConfig}>Cancel</button>
+      <footer class="fd-dialog__footer fd-bar fd-bar--footer">
+        <div class="fd-bar__right">
+          <div class="fd-bar__element">
+            <button class="fd-dialog__decisive-button fd-button fd-button--transparent fd-button--compact" on:click={resetConfig}>Reset</button>
+          </div>
+          <div class="fd-bar__element lui-mobile-hide">
+            <button class="fd-dialog__decisive-button fd-button fd-button--compact" on:click={saveConfig}>Apply</button>
+          </div>
+          <div class="fd-bar__element lui-mobile-show">
+            <button class="fd-dialog__decisive-button fd-button fd-button--compact" on:click={saveConfigTA}>Apply</button>
+          </div>
+          <div class="fd-bar__element">
+            <button class="fd-dialog__decisive-button fd-button fd-button--transparent fd-button--compact" on:click={closeConfig}>Cancel</button>
+          </div>
         </div>
       </footer>
     </div>
@@ -210,37 +259,40 @@
 <div class="fiddle-toolbar">
   <div class="fd-action-bar">
     <div class="fd-action-bar__header">
-      <img alt="Luigi" src="./img/luigi.png" />
-      <span class="lui-mobile-hide">powered by Luigi v{luigiVersion}</span>
-      <span>
-        <a
-          class="fd-link"
-          href="https://www.sap.com/about/legal/privacy.html"
-          target="_blank">
-          Privacy Policy
-        </a>
-        <a
-          class="fd-link"
-          href="https://www.sap.com/about/legal/impressum.html"
-          target="_blank">
-          Legal
-        </a>
-      </span>
-    </div>
-    <div class="fd-action-bar__actions">
-      <button class="fd-button--standard btn-primary" on:click={clearAll}>
-        <span class="lui-mobile-hide">Clear All</span>
-        <span class="lui-mobile-show sap-icon--delete" />
-      </button>
-      <span class="lui-sep" />
-      <button class="fd-button--standard btn-primary" on:click={openConfig}>
-        <span class="lui-mobile-hide">Modify Config</span>
-        <span class="lui-mobile-show sap-icon--edit" />
-      </button>
-      <button class="fd-button--standard btn-primary" on:click={hide}>
-        <span class="lui-mobile-hide">Hide</span>
-        <span class="lui-mobile-show sap-icon--hide" />
-      </button>
+      <div class="title-wrapper">
+        <img alt="Luigi" src="./img/luigi.png" />
+        <span class="lui-mobile-hide">powered by Luigi v{luigiVersion}</span>
+        <span>
+          <a
+            class="fd-link"
+            href="https://www.sap.com/about/legal/privacy.html"
+            target="_blank">
+            Privacy Policy
+          </a>
+          <a
+            class="fd-link"
+            href="https://www.sap.com/about/legal/impressum.html"
+            target="_blank">
+            Legal
+          </a>
+        </span>
+      </div>
+
+      <div class="fd-action-bar__actions">
+        <button class="fd-button fd-button--standard btn-primary" on:click={clearAll}>
+          <span class="lui-mobile-hide">Clear All</span>
+          <span class="lui-mobile-show sap-icon--delete" />
+        </button>
+        <span class="lui-sep" />
+        <button class="fd-button fd-button--standard btn-primary" on:click={openConfig}>
+          <span class="lui-mobile-hide">Modify Config</span>
+          <span class="lui-mobile-show sap-icon--edit" />
+        </button>
+        <button class="fd-button fd-button--standard btn-primary" on:click={hide}>
+          <span class="lui-mobile-hide">Hide</span>
+          <span class="lui-mobile-show sap-icon--hide" />
+        </button>
+      </div>
     </div>
   </div>
 </div>
